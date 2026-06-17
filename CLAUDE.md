@@ -88,8 +88,24 @@ npm install
 npm run dev        # → http://localhost:3000
 ```
 
-First run creates `./data/app.db` and (from Step 2 on) loads the seed if missing.
-`npm run db:reset` will rebuild the DB from seed (script added in Step 2).
+First run creates `./data/app.db` and loads the seed if missing.
+`npm run db:reset` deletes the live DB so the next `npm run dev` re-initializes it.
+
+### Selectable default data — seed template (SEED_DB_PATH)
+
+`SEED_DB_PATH` (env) optionally points at a SQLite file used as the **default-seed
+template**. On FIRST run (no `./data/app.db`), if it's set and valid, the live DB
+is initialized by copying that template (its world becomes the seed) and the
+mutable user layer is cleared so the session starts fresh. Empty/invalid → falls
+back to `src/data/seed.json`. It only acts on first run — once `app.db` exists it
+is never re-copied. `meta.seeded_from` records `template` vs `seed.json`.
+
+- Make a clean template from a running DB: `npm run db:template -- ./data/seed-template.db`
+  (online backup → strips the mutable layer → checkpoints WAL → single file).
+- Switch default data: set `SEED_DB_PATH`, then `npm run db:reset` + `npm run dev`.
+- A committed `/data/seed-template.db` is NOT gitignored — default data can ship
+  with the repo (its `-wal`/`-shm` sidecars are ignored). Implemented in
+  `src/lib/db.ts` (`maybeCopyTemplate`), `scripts/db-template.mjs`.
 
 ## Build order & progress (spec §11 — pause after each step)
 

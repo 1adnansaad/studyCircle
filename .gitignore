@@ -11,8 +11,11 @@ out
 
 # live database (commit the seed *source*, not the live db)
 /data/app.db
-/data/app.db-shm
-/data/app.db-wal
+# transient SQLite WAL sidecars (any db under /data)
+/data/*.db-wal
+/data/*.db-shm
+# NOTE: a committed seed template (e.g. /data/seed-template.db) is intentionally
+# NOT ignored — it can travel with the repo as selectable default data.
 
 # design handoff reference (large; kept locally for context, not committed)
 design-ref

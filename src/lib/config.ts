@@ -17,6 +17,10 @@ function intEnv(name: string, fallback: number): number {
 export const config = {
   // Database
   dbPath: process.env.DB_PATH?.trim() || "./data/app.db",
+  // Optional SQLite file used as the DEFAULT-SEED TEMPLATE on first run. When set
+  // and valid, the live DB is initialized by copying this template (then the
+  // mutable user layer is cleared). Empty → seed from src/data/seed.json.
+  seedDbPath: process.env.SEED_DB_PATH?.trim() || "",
 
   // Free-trial caps (env-configurable; drive enforcement + meters + copy)
   bookmarkCap: intEnv("BOOKMARK_CAP", 5),
