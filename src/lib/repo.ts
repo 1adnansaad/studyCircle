@@ -69,6 +69,89 @@ export function listGroups(): GroupRow[] {
   return getDb().prepare("SELECT * FROM groups").all() as GroupRow[];
 }
 
+export type CommentRow = {
+  id: string;
+  post_id: string;
+  author_profile_id: string;
+  parent_comment_id: string | null;
+  body: string;
+  created_at: string;
+};
+
+export type EmbedRow = {
+  id: string;
+  post_id: string;
+  lesson_id: string | null;
+  lesson_title: string;
+  subject: string | null;
+  thumbnail_path: string | null;
+  course_ref: string | null;
+};
+
+export type LessonRow = {
+  id: string;
+  title: string;
+  subject: string | null;
+  class: number | null;
+  duration: string | null;
+  thumbnail_path: string | null;
+  course_ref: string | null;
+};
+
+export function getPost(id: string): PostRow | undefined {
+  return getDb().prepare("SELECT * FROM posts WHERE id = ?").get(id) as PostRow | undefined;
+}
+
+export function getEmbed(postId: string): EmbedRow | undefined {
+  return getDb().prepare("SELECT * FROM post_embeds WHERE post_id = ?").get(postId) as
+    | EmbedRow
+    | undefined;
+}
+
+export function listComments(postId: string): CommentRow[] {
+  return getDb()
+    .prepare("SELECT * FROM comments WHERE post_id = ? ORDER BY created_at")
+    .all(postId) as CommentRow[];
+}
+
+export function listPostsByProfile(profileId: string): PostRow[] {
+  return getDb()
+    .prepare("SELECT * FROM posts WHERE author_profile_id = ? ORDER BY created_at DESC")
+    .all(profileId) as PostRow[];
+}
+
+export function listGroupPosts(groupId: string): PostRow[] {
+  return getDb()
+    .prepare("SELECT * FROM posts WHERE group_id = ? ORDER BY created_at DESC")
+    .all(groupId) as PostRow[];
+}
+
+export function listProfileGroups(profileId: string): GroupRow[] {
+  return getDb()
+    .prepare(
+      `SELECT g.* FROM groups g JOIN profile_groups pg ON pg.group_id = g.id
+       WHERE pg.profile_id = ?`
+    )
+    .all(profileId) as GroupRow[];
+}
+
+export function listLessons(): LessonRow[] {
+  return getDb().prepare("SELECT * FROM lessons ORDER BY class DESC").all() as LessonRow[];
+}
+
+export function getLesson(id: string): LessonRow | undefined {
+  return getDb().prepare("SELECT * FROM lessons WHERE id = ?").get(id) as LessonRow | undefined;
+}
+
+export function listBookmarkedPosts(sessionId: string): PostRow[] {
+  return getDb()
+    .prepare(
+      `SELECT p.* FROM posts p JOIN bookmarks b ON b.post_id = p.id
+       WHERE b.session_id = ? ORDER BY b.created_at DESC`
+    )
+    .all(sessionId) as PostRow[];
+}
+
 export function getGroup(id: string): GroupRow | undefined {
   return getDb().prepare("SELECT * FROM groups WHERE id = ?").get(id) as
     | GroupRow

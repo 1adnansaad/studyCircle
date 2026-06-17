@@ -46,9 +46,15 @@ The `design-ref` prototype was built for a design tool with different answers.
 This build follows the **build spec**:
 
 - **Language split (§0):** existing Shikho **chrome stays Bengali** (পদ্ধতি / ইনবক্স /
-  শিখো AI, embed CTA, **Bengali numerals ০–৯**, ৳). New **StudyCircle strings are
+  শিখো AI, embed CTA `শুরু করো · ৩ দিন ফ্রি`, ৳). New **StudyCircle strings are
   English** (Feed, Groups, Bookmark, Search, Follow, gates/empties/modals).
   *(The prototype went all-English + Latin numerals — do NOT follow that.)*
+  - **Numerals decision:** **seeded/student-facing data renders in Bengali numerals
+    ০–৯** (post like/comment/repost counts, follower/following counts, group
+    active/posts-per-day, class tags `ক্লাস ৯`, ranks, prices ৳, relative time
+    `২ ঘণ্টা আগে`, lesson durations). **Free-trial freemium meters stay English/Latin**
+    (`5 / 5` bookmarks, `0 of 7 searches`) since those are StudyCircle UI strings.
+    All conversion via `src/lib/format.ts` (`bn`, `bnCount`, `classTag`, `relativeTime`).
 - **Gated writes (§1):** Comment, Reply, Like, Repost, Quote, **Share**, and the
   terminal **Post** are all **gated → upsell, no state change**.
   *(The prototype made posting metered-7/week and Share free — do NOT follow that.)*
@@ -102,7 +108,19 @@ First run creates `./data/app.db` and (from Step 2 on) loads the seed if missing
       Verified end-to-end via the real server-action path: bookmark/follow/join
       survived a full server restart; follower count derived (seed+1); logout
       cascade clears the mutable layer while the world stays intact.
-- [ ] **4. Look/screens** from DESIGN.md + design-ref.
+- [x] **4. Look/screens** from DESIGN.md + design-ref. Routed Next screens (each
+      server-renders live DB data) inside a client phone-shell. Routes: `/` Login,
+      `(app)/` group with `home`, `studycircle` (+`/groups`), `post/[id]`,
+      `profile/[id]` (incl. `/me`), `group/[id]`, `explore`, `composer`,
+      `lesson/[id]`, `bookmarks`. Shell = bottom nav + Home⇄StudyCircle radio
+      toggle + sidebar + modal/toast layer (`src/components/app-shell.tsx`).
+      Components: `post-card` (+CommentCard, clickable chips), `follow-button`,
+      `group-card`, `screen-widgets` (tabs, reply bar, explore AI search, composer,
+      meter chips), `icons`, `layout-bits`, `screen-chrome`. View-models in
+      `src/lib/view.ts`; Bengali formatting in `src/lib/format.ts`.
+      NOTE: much of Step 5's gating shipped here too (upsell on gated writes,
+      join-confirm, bookmark-at-cap remove modal, dead-end modal, follower math) —
+      Step 5 becomes verification + edge cases.
 - [ ] **5. Features + free-trial gating (§1)** incl. follower-count behavior (§3).
 - [ ] **6. Explore search → LLM (§9)** (server-side; provider via LLM_PROVIDER).
 - [ ] **7. Logout-reset (§3)** + re-verify persist-on-exit / reset-on-logout.

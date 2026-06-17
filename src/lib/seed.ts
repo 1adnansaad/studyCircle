@@ -43,9 +43,9 @@ export function seedWorld(db: Database.Database): void {
   );
 
   const tx = db.transaction(() => {
-    for (const p of seed.profiles) insertProfile.run({ bio: null, ...p });
+    for (const p of seed.profiles) insertProfile.run({ ...p, bio: p.bio ?? null });
     for (const g of seed.groups) insertGroup.run(g);
-    for (const l of seed.lessons) insertLesson.run({ thumbnail_path: null, ...l });
+    for (const l of seed.lessons) insertLesson.run({ ...l, thumbnail_path: l.thumbnail_path ?? null });
 
     for (const post of seed.posts) {
       const created_at = hoursAgoIso(post.hours_ago);
