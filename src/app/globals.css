@@ -35,6 +35,28 @@ button { font-family: inherit; }
 .sc-anim-slide-up  { animation: sc-slide-up .28s cubic-bezier(.22,.61,.36,1) both; }
 .sc-anim-slide-left{ animation: sc-slide-left .28s cubic-bezier(.22,.61,.36,1) both; }
 
+/* Page-switch progress bar — gradient sweep that fills then fades on each
+   navigation. Decorative ("fake"): it replays whenever the route key changes. */
+@keyframes sc-progress {
+  0%   { width: 0%;   opacity: 1; }
+  55%  { width: 70%;  opacity: 1; }
+  80%  { width: 90%;  opacity: 1; }
+  100% { width: 100%; opacity: 0; }
+}
+.sc-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  z-index: 25;                       /* above content & nav, below modal scrim */
+  background: var(--ll-gradient-progress);   /* indigo → pink */
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 8px rgba(226, 22, 95, 0.45);
+  pointer-events: none;
+  animation: sc-progress .65s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) { .sc-progress { display: none; } }
+
 /* Tactile press: every tappable control eases on press (push-in), per DESIGN. */
 button, a { transition: transform .12s ease, opacity .12s ease, filter .12s ease; }
 button:active, a:active { transform: scale(0.97); }

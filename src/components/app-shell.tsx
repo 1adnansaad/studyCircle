@@ -160,6 +160,8 @@ export function AppShell({
     <AppCtx.Provider value={ctx}>
       <main style={shell}>
         <div style={frame}>
+          {/* gradient fake-loading bar — replays on every route change */}
+          <span key={`progress-${pathname}`} className="sc-progress" />
           <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} onScrollCapture={onScroll}>
             <div key={pathname} className="sc-anim-fade" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
               {children}
