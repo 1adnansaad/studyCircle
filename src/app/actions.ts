@@ -10,9 +10,18 @@ import {
   joinGroup,
   toggleFollow,
   recordSearch,
+  searchesUsed,
+  listSearchCorpus,
+  llmTokensUsed,
+  addLlmTokens,
+  hasTokenBudget,
   type BookmarkResult,
   type JoinResult,
 } from "@/lib/repo";
+import { config, publicCaps } from "@/lib/config";
+import { rankSearch } from "@/lib/llm";
+import { searchResultsView } from "@/lib/view";
+import type { PostCardVM } from "@/lib/view";
 
 function refresh() {
   revalidatePath("/", "layout");
@@ -70,10 +79,56 @@ export async function joinGroupAction(groupId: string): Promise<JoinResult> {
   return res;
 }
 
-/** Records a search against the weekly cap (LLM call lands in Step 6). */
-export async function recordSearchAction() {
+export type SearchResponse =
+  | { status: "search_cap"; used: number; cap: number }
+  | { status: "token_exhausted"; budget: number }
+  | { status: "empty" }
+  | {
+      status: "ok";
+      results: PostCardVM[];
+      used: number;
+      cap: number;
+      provider: string;
+      model: string;
+      fallback: boolean;
+      tokensUsed: number;
+      tokenBudget: number;
+    };
+
+/**
+ * Explore search (spec §9): weekly-cap gate → token-budget gate → LLM ranks
+ * LLM_CANDIDATE_ROWS candidates from search_corpus → record tokens + the search.
+ * LLM runs server-side only.
+ */
+export async function searchAction(query: string): Promise<SearchResponse> {
   const sid = requireSession();
-  const res = recordSearch(sid);
+  const q = query.trim();
+  if (!q) return { status: "empty" };
+
+  const used = searchesUsed(sid);
+  if (used >= publicCaps.searchWeeklyCap)
+    return { status: "search_cap", used, cap: publicCaps.searchWeeklyCap };
+
+  if (!hasTokenBudget(sid))
+    return { status: "token_exhausted", budget: config.llmSessionTokenBudget };
+
+  const candidates = listSearchCorpus(config.llmCandidateRows);
+  const ranked = await rankSearch(q, candidates);
+
+  addLlmTokens(sid, ranked.tokensUsed);
+  recordSearch(sid); // count the weekly search only once it actually ran
+
+  const results = searchResultsView(sid, ranked.postIds);
   refresh();
-  return res;
+  return {
+    status: "ok",
+    results,
+    used: used + 1,
+    cap: publicCaps.searchWeeklyCap,
+    provider: ranked.provider,
+    model: ranked.model,
+    fallback: ranked.fallback,
+    tokensUsed: llmTokensUsed(sid),
+    tokenBudget: config.llmSessionTokenBudget,
+  };
 }

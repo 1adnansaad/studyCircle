@@ -306,6 +306,47 @@ export function toggleFollow(sessionId: string, profileId: string): FollowResult
   return { ok: true, following: true };
 }
 
+// ── LLM search corpus + per-session token budget (spec §9 + extension) ───────
+
+export type CorpusRow = {
+  id: string;
+  post_id: string;
+  user_tag: string;
+  class: number | null;
+  subject: string | null;
+  search_text: string;
+  created_at: string;
+};
+
+/** The candidate rows fed to the LLM — newest first, capped at `limit`. */
+export function listSearchCorpus(limit: number): CorpusRow[] {
+  return getDb()
+    .prepare("SELECT * FROM search_corpus ORDER BY created_at DESC LIMIT ?")
+    .all(limit) as CorpusRow[];
+}
+
+export function llmTokensUsed(sessionId: string): number {
+  const row = getDb()
+    .prepare("SELECT tokens_used FROM llm_token_usage WHERE session_id = ?")
+    .get(sessionId) as { tokens_used: number } | undefined;
+  return row?.tokens_used ?? 0;
+}
+
+export function addLlmTokens(sessionId: string, tokens: number): number {
+  getDb()
+    .prepare(
+      `INSERT INTO llm_token_usage (session_id, tokens_used) VALUES (?, ?)
+       ON CONFLICT(session_id) DO UPDATE SET tokens_used = tokens_used + excluded.tokens_used`
+    )
+    .run(sessionId, Math.max(0, Math.round(tokens)));
+  return llmTokensUsed(sessionId);
+}
+
+/** True if the session still has LLM token budget left for another search. */
+export function hasTokenBudget(sessionId: string): boolean {
+  return llmTokensUsed(sessionId) < config.llmSessionTokenBudget;
+}
+
 // ── Search usage (allowed, capped ≤ SEARCH_WEEKLY_CAP per week) ───────────────
 
 /** ISO date (YYYY-MM-DD) of the Monday starting the current week. */

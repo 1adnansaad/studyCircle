@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentSession } from "@/lib/session";
 import { classTag } from "@/lib/format";
+import { Screen, ScrollBody } from "@/components/layout-bits";
 import { SidebarTrigger } from "@/components/screen-chrome";
 import { DeadButton } from "@/components/screen-widgets";
 import { SparkleIcon, PlayIcon, UsersIcon, ChevronRight } from "@/components/icons";
@@ -13,7 +14,8 @@ export default function HomePage() {
   const cls = classTag(session.class);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <Screen>
+      <ScrollBody style={{ display: "flex", flexDirection: "column" }}>
       <div style={{ background: "var(--ll-wash-lavender)" }}>
         <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 6px", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -28,7 +30,7 @@ export default function HomePage() {
         </header>
       </div>
 
-      <div style={{ padding: "8px 16px 24px", display: "flex", flexDirection: "column", gap: 22 }}>
+      <div style={{ padding: "8px 16px 96px", display: "flex", flexDirection: "column", gap: 22 }}>
         {/* Free-trial hero */}
         <div style={{ background: "var(--ll-wash-lavender)", margin: "-8px -16px 0", padding: "14px 16px 20px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
@@ -88,7 +90,8 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-    </div>
+      </ScrollBody>
+    </Screen>
   );
 }
 

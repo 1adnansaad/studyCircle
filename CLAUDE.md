@@ -129,8 +129,26 @@ First run creates `./data/app.db` and (from Step 2 on) loads the seed if missing
       server actions exist, so gated writes (comment/like/repost/quote/share/post)
       cannot persist — each routes to the upsell. Added bottom-nav auto-hide on
       scroll (§4).
-- [ ] **6. Explore search → LLM (§9)** (server-side; provider via LLM_PROVIDER).
-- [ ] **7. Logout-reset (§3)** + re-verify persist-on-exit / reset-on-logout.
+- [x] **6. Explore search → LLM (§9)** (server-side; provider via LLM_PROVIDER).
+      Dedicated `search_corpus` table (seeded world, denormalized post inputs;
+      backfilled idempotently for pre-existing DBs in `db.ts`). `src/lib/llm.ts`
+      ranks `LLM_CANDIDATE_ROWS` candidates via gemini/anthropic over fetch
+      (Anthropic `/v1/messages`, x-api-key + anthropic-version 2023-06-01; default
+      models `gemini-2.5-flash` / `claude-haiku-4-5`), with a keyword fallback when
+      no key is set. Per-session token budget `LLM_SESSION_TOKEN_BUDGET` tracked in
+      mutable `llm_token_usage` (cleared on logout) → exceeding it blocks search
+      with an "AI tokens exhausted" toast. `searchAction` gates: weekly cap →
+      token budget → rank → record tokens + search. Schema bumped to v2.
+      `src/components/explore-client.tsx` owns the AI composer + results.
+      Verified: relevant ranking, token accrual, exhaustion block, cap reset.
+- [x] **7. Logout-reset (§3)** + re-verify persist-on-exit / reset-on-logout.
+      Logout = `DELETE FROM session` (sidebar `form action={logoutAction}`) →
+      ON DELETE CASCADE clears ALL mutable tables (bookmarks, joined_groups,
+      follows, search_usage, llm_token_usage); seeded world untouched so derived
+      follower counts revert automatically. No destructive ops on boot (restart
+      preserves everything). Verified: full cascade clears 5/5 mutable tables,
+      world byte-identical before/after, only the logged-out session row removed.
+      **All 7 build-order steps complete.**
 
 ## Project layout
 

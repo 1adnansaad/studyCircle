@@ -31,8 +31,14 @@ export const config = {
     | "anthropic",
   geminiApiKey: process.env.GEMINI_API_KEY?.trim() || "",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY?.trim() || "",
-  geminiModel: process.env.GEMINI_MODEL?.trim() || "",
-  anthropicModel: process.env.ANTHROPIC_MODEL?.trim() || "",
+  // Current, fast/cheap defaults for a ranking call — override via env.
+  geminiModel: process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash",
+  anthropicModel: process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5",
+
+  // How many rows of search_corpus the LLM receives as candidates per search.
+  llmCandidateRows: intEnv("LLM_CANDIDATE_ROWS", 20),
+  // Per-demo-session LLM token budget; exceeding it blocks search with a toast.
+  llmSessionTokenBudget: intEnv("LLM_SESSION_TOKEN_BUDGET", 20000),
 } as const;
 
 /**

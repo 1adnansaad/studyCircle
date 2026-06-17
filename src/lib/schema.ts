@@ -91,6 +91,20 @@ CREATE TABLE IF NOT EXISTS profile_groups (
   PRIMARY KEY (profile_id, group_id)
 );
 
+-- LLM search candidates (spec §9): the dedicated table of inputs the model
+-- ranks for Explore search. Denormalized from posts so a search is one read.
+-- The LLM receives LLM_CANDIDATE_ROWS rows from here per query.
+CREATE TABLE IF NOT EXISTS search_corpus (
+  id          TEXT PRIMARY KEY,
+  post_id     TEXT NOT NULL REFERENCES posts(id),
+  user_tag    TEXT NOT NULL,
+  class       INTEGER,
+  subject     TEXT,
+  search_text TEXT NOT NULL,   -- body (+ embed title) the model reads
+  created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_corpus_created ON search_corpus(created_at);
+
 -- ══ MUTABLE USER LAYER (cleared on logout) ═══════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS session (
@@ -127,7 +141,14 @@ CREATE TABLE IF NOT EXISTS search_usage (
   week_start    TEXT NOT NULL,
   PRIMARY KEY (session_id, week_start)
 );
+
+-- Per-session LLM token budget (spec extension): cumulative tokens spent on
+-- Explore search this demo session. Cleared on logout via cascade.
+CREATE TABLE IF NOT EXISTS llm_token_usage (
+  session_id  TEXT PRIMARY KEY REFERENCES session(id) ON DELETE CASCADE,
+  tokens_used INTEGER NOT NULL DEFAULT 0
+);
 `;
 
 /** Bump when the schema changes in a non-additive way. */
-export const SCHEMA_VERSION = "1";
+export const SCHEMA_VERSION = "2";

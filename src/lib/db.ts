@@ -12,7 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config";
 import { SCHEMA_SQL, SCHEMA_VERSION } from "./schema";
-import { seedWorld } from "./seed";
+import { seedWorld, backfillSearchCorpus } from "./seed";
 
 type DB = Database.Database;
 
@@ -50,6 +50,9 @@ function ensureInitialized(db: DB): void {
         "ON CONFLICT(key) DO UPDATE SET value = excluded.value"
     ).run(new Date().toISOString());
   }
+
+  // Idempotent: fill search_corpus for DBs seeded before it existed.
+  backfillSearchCorpus(db);
 }
 
 export function getDb(): DB {

@@ -1,12 +1,11 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import type { PostCardVM, GroupCardVM } from "@/lib/view";
 import { useApp } from "./app-shell";
 import { PostCard } from "./post-card";
-import { recordSearchAction } from "@/app/actions";
-import { SparkleIcon, ChevronUp, ImageIcon, InfoIcon, PlayIcon, CheckIcon } from "./icons";
+import { SparkleIcon, ImageIcon, InfoIcon, PlayIcon } from "./icons";
 
 // ── Generic dead/out-of-scope button ─────────────────────────────────────────
 export function DeadButton({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -109,59 +108,7 @@ export function GroupComposeButton() {
   );
 }
 
-// ── Explore AI search (collapsed bar → LLM-style composer) ────────────────────
-export function ExploreSearch({ used, cap }: { used: number; cap: number }) {
-  const { upsell, chipInfo, toast } = useApp();
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
-  const [, startTransition] = useTransition();
-  const router = useRouter();
-  const max = 120;
-
-  function submit() {
-    const q = text.trim();
-    if (!q) return;
-    startTransition(async () => {
-      const res = await recordSearchAction();
-      if (!res.ok) {
-        upsell({ title: `You've used all ${cap} of your weekly searches`, body: "Subscribe for unlimited AI search across StudyCircle." });
-        return;
-      }
-      toast(`Searching… ${res.used} of ${cap} weekly searches used.`);
-      router.refresh();
-      // (LLM ranking lands in Step 6; trending results stay visible for now.)
-    });
-  }
-
-  if (!open) {
-    return (
-      <button onClick={() => setOpen(true)} style={collapsedBar}>
-        <SparkleIcon size={18} stroke="var(--ll-primary)" />
-        <span style={{ flex: 1, textAlign: "left", color: "var(--ll-on-surface-variant)", fontSize: 14 }}>Ask StudyCircle anything…</span>
-      </button>
-    );
-  }
-  return (
-    <div style={composerBox}>
-      <textarea
-        autoFocus value={text} maxLength={max}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="e.g. best posts on Newton's laws for SSC"
-        style={{ width: "100%", border: "none", outline: "none", resize: "none", background: "transparent", fontSize: 15, lineHeight: 1.5, color: "var(--ll-on-surface)", fontFamily: "var(--ll-font-latin)", minHeight: 72 }}
-      />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={() => setOpen(false)} aria-label="Collapse" style={{ border: "none", background: "var(--ll-surface-container-high)", color: "var(--ll-on-surface-variant)", width: 32, height: 32, borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ChevronUp size={18} /></button>
-          <button onClick={() => chipInfo({ title: "Free-trial search limit", body: `On the free trial you get ${cap} AI searches per week. Subscribe for unlimited search.`, showCta: true })} style={{ border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, padding: "5px 10px", borderRadius: 999, background: "var(--ll-secondary-tint)", color: "var(--ll-secondary)" }}>{used}/{cap} free</button>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, color: text.length >= max ? "var(--ll-error)" : "var(--ll-on-surface-variant)" }}>{text.length} / {max}</span>
-          <button onClick={submit} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", cursor: "pointer", background: "var(--ll-gradient-deep)", color: "#fff", fontWeight: 600, fontSize: 13, padding: "9px 14px", borderRadius: 999 }}><SparkleIcon size={15} />Ask Shikho AI</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// (Explore AI search now lives in explore-client.tsx — it owns search state + results.)
 
 // ── Composer (S9) ─────────────────────────────────────────────────────────────
 const PRIVACY = ["Public", "Followers", "Only me"] as const;
@@ -227,6 +174,4 @@ export function Composer({ authorTag, classTag, lessons }: { authorTag: string; 
 
 const miniRow: React.CSSProperties = { display: "flex", alignItems: "center", gap: 12, textAlign: "left", border: "none", cursor: "pointer", background: "var(--ll-surface-container-lowest)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-card)", padding: 12, width: "100%" };
 const miniBadge: React.CSSProperties = { width: 40, height: 40, borderRadius: 11, background: "var(--ll-gradient-deep)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 15 };
-const collapsedBar: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, width: "100%", border: "none", cursor: "pointer", background: "var(--ll-surface-container-lowest)", borderRadius: 999, boxShadow: "var(--ll-shadow-card)", padding: "14px 18px" };
-const composerBox: React.CSSProperties = { background: "var(--ll-surface-container-lowest)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-card)", padding: "14px 16px" };
 const toolBtn: React.CSSProperties = { border: "none", background: "transparent", cursor: "pointer", color: "var(--ll-on-surface-variant)", display: "flex", padding: 6 };

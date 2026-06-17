@@ -224,6 +224,15 @@ export function bookmarksView(sessionId: string) {
   };
 }
 
+/** Map ranked post ids → PostCard view-models, preserving rank order. */
+export function searchResultsView(sessionId: string, postIds: string[]): PostCardVM[] {
+  const bm = new Set(listBookmarks(sessionId));
+  return postIds
+    .map((id) => getPost(id))
+    .filter((p): p is NonNullable<typeof p> => !!p)
+    .map((p) => postToVM(p, bm));
+}
+
 export function exploreView(sessionId: string) {
   // Default state shows trending = the most-engaged seeded posts.
   const bm = new Set(listBookmarks(sessionId));
