@@ -370,7 +370,7 @@ export { UsersIcon, CheckIcon, CloseIcon };
 
 // ── styles ───────────────────────────────────────────────────────────────────
 const shell: React.CSSProperties = { minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", padding: "0px 0px" };
-const frame: React.CSSProperties = { width: "var(--ll-phone-width)", height: "var(--ll-phone-height)", background: "var(--ll-surface)", borderRadius: 12, overflow: "hidden", boxShadow: "0 28px 70px rgba(25,28,30,.28)", position: "relative", display: "flex", flexDirection: "column" };
+const frame: React.CSSProperties = { width: "var(--ll-phone-width)", height: "var(--ll-phone-height)", background: "var(--ll-surface)", borderRadius: 0, overflow: "hidden", boxShadow: "0 28px 70px rgba(25,28,30,.28)", position: "relative", display: "flex", flexDirection: "column" };
 const nav: React.CSSProperties = { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 15, display: "flex", background: "var(--ll-surface-container-lowest)", boxShadow: "var(--ll-shadow-bottom-nav)", padding: "6px 4px 9px" };
 const navBtn: React.CSSProperties = { flex: 1, border: "none", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "7px 0" };
 const toggleBtn: React.CSSProperties = { flex: 1, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px 0" };

@@ -48,8 +48,8 @@ export default function LoginPage() {
   );
 }
 
-const shell: React.CSSProperties = { minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "28px 16px" };
-const frame: React.CSSProperties = { width: "var(--ll-phone-width)", height: "var(--ll-phone-height)", background: "var(--ll-wash-lavender)", borderRadius: 38, boxShadow: "0 28px 70px rgba(25,28,30,.28)", padding: "28px 22px", display: "flex", flexDirection: "column", overflow: "hidden" };
+const shell: React.CSSProperties = { minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 0 };
+const frame: React.CSSProperties = { width: "var(--ll-phone-width)", height: "var(--ll-phone-height)", background: "var(--ll-wash-lavender)", borderRadius: 0, boxShadow: "0 28px 70px rgba(25,28,30,.28)", padding: "28px 22px", display: "flex", flexDirection: "column", overflow: "hidden" };
 const card: React.CSSProperties = { background: "var(--ll-surface-container-lowest)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-card)", padding: "26px 22px" };
 const pill: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--ll-secondary)", background: "var(--ll-secondary-tint)", padding: "5px 11px", borderRadius: 999 };
 const label: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 600, color: "var(--ll-on-surface)", marginBottom: 6 };
