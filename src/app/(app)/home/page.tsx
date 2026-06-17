@@ -21,9 +21,9 @@ export default function HomePage() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--ll-gradient-deep)" }} />
             <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 800, fontSize: 18, color: "var(--ll-primary)" }}>Shikho</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <DeadButton style={{ display: "inline-flex", alignItems: "center", gap: 5, border: "none", cursor: "pointer", padding: "6px 12px", borderRadius: 999, background: "var(--ll-gradient-deep)", color: "#fff", fontWeight: 600, fontSize: 13 }}><SparkleIcon size={15} />AI</DeadButton>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* <DeadButton style={{ display: "inline-flex", alignItems: "center", gap: 5, border: "none", cursor: "pointer", padding: "6px 12px", borderRadius: 999, background: "var(--ll-gradient-deep)", color: "#fff", fontWeight: 600, fontSize: 13 }}><SparkleIcon size={15} />AI</DeadButton> */}
             <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 999, border: "1.5px solid var(--ll-outline-variant)", fontSize: 12, fontWeight: 600, color: "var(--ll-on-surface)" }}>{cls}</span>
             <SidebarTrigger />
           </div>
@@ -47,19 +47,30 @@ export default function HomePage() {
             <Perk bg="var(--ll-tertiary-fixed)" fg="var(--ll-on-tertiary-fixed-variant)" label="স্মার্ট নোট ও প্র্যাকটিস বই" />
           </div>
         </div>
-
+                
         {/* Continue learning */}
-        <DeadButton style={{ background: "var(--ll-surface-container-lowest)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-card)", padding: 14, display: "flex", gap: 12, cursor: "pointer", textAlign: "left", border: "none", width: "100%" }}>
+        {/* <DeadButton style={{ background: "var(--ll-surface-container-lowest)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-card)", padding: 14, display: "flex", gap: 12, cursor: "pointer", textAlign: "left", border: "none", width: "100%" }}>
           <div style={{ width: 60, height: 60, borderRadius: 14, background: "var(--ll-gradient-deep)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 22 }}>{session.class}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, color: "var(--ll-on-surface-variant)" }}>শেখা চালিয়ে যাও</div>
             <div style={{ fontFamily: "var(--ll-font-display)", fontWeight: 600, fontSize: 15, color: "var(--ll-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>পদার্থবিজ্ঞান — অধ্যায় ৩: নিউটনের সূত্র</div>
             <div style={{ marginTop: 9, height: 8, borderRadius: 999, background: "var(--ll-surface-container-high)", overflow: "hidden" }}><div style={{ width: "64%", height: "100%", background: "var(--ll-gradient-progress)" }} /></div>
           </div>
-        </DeadButton>
+        </DeadButton> */}
+
+        {/* StudyCircle entry */}
+        {/* <Link href="/studycircle" style={{ textDecoration: "none", border: "none", cursor: "pointer", background: "var(--ll-surface-container-lowest)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-card)", padding: 16, display: "flex", alignItems: "center", gap: 13 }}>
+          <span style={{ width: 46, height: 46, borderRadius: 13, background: "var(--ll-secondary-tint)", color: "var(--ll-secondary)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><UsersIcon size={24} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 16, color: "var(--ll-on-surface)" }}>StudyCircle is live</div>
+            <div style={{ fontSize: 13, color: "var(--ll-on-surface-variant)", marginTop: 2 }}>See what your class is posting — join in.</div>
+          </div>
+          <span style={{ color: "var(--ll-on-surface-variant)", flex: "none", display: "flex" }}><ChevronRight size={20} /></span>
+        </Link> */}
+
 
         {/* Recommended courses */}
-        <div>
+        {/* <div>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
             <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 18, color: "var(--ll-on-surface)" }}>তোমার জন্য কোর্স</span>
           </div>
@@ -67,16 +78,57 @@ export default function HomePage() {
             <CourseCard title={`${cls} — SSC '২৮ সায়েন্স`} original="২৪,০০০" effective="১৮,৬০০" />
             <CourseCard title="HSC কেমিস্ট্রি — MCQ ব্যাচ" original="৮,০০০" effective="৫,৫০০" />
           </div>
-        </div>
+        </div> */}
 
-        {/* StudyCircle entry */}
-        <Link href="/studycircle" style={{ textDecoration: "none", border: "none", cursor: "pointer", background: "var(--ll-surface-container-lowest)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-card)", padding: 16, display: "flex", alignItems: "center", gap: 13 }}>
-          <span style={{ width: 46, height: 46, borderRadius: 13, background: "var(--ll-secondary-tint)", color: "var(--ll-secondary)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><UsersIcon size={24} /></span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 16, color: "var(--ll-on-surface)" }}>StudyCircle is live</div>
-            <div style={{ fontSize: 13, color: "var(--ll-on-surface-variant)", marginTop: 2 }}>See what your class is posting — join in.</div>
+        
+
+        {/* StudyCircle entry — the main attraction */}
+        <Link
+          href="/studycircle"
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            display: "block",
+            textDecoration: "none",
+            color: "#fff",
+            borderRadius: "var(--ll-radius-lg)",
+            padding: "22px 20px",
+            background: "radial-gradient(circle at 88% 10%, rgba(226,22,95,.55), transparent 58%), var(--ll-gradient-deep)",
+            boxShadow: "var(--ll-shadow-deep)",
+          }}
+        >
+          {/* decorative oversized glyph */}
+          <span aria-hidden style={{ position: "absolute", right: -28, bottom: -44, color: "rgba(255,255,255,.10)", pointerEvents: "none" }}>
+            <UsersIcon size={150} />
+          </span>
+
+          <div style={{ position: "relative" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", background: "var(--ll-secondary)", color: "#fff", padding: "5px 11px", borderRadius: 999, boxShadow: "var(--ll-shadow-cta)" }}>
+              <SparkleIcon size={13} />New · StudyCircle
+            </span>
+
+            <h2 style={{ margin: "13px 0 6px", fontFamily: "var(--ll-font-display)", fontWeight: 800, fontSize: 26, lineHeight: 1.15 }}>
+              Your class is talking. Jump in. 🔥
+            </h2>
+            <p style={{ margin: "0 0 16px", fontSize: 14, lineHeight: 1.5, color: "rgba(255,255,255,.85)", maxWidth: 290 }}>
+              Ask questions, share notes, and learn together with classmates — right inside Shikho.
+            </p>
+
+            {/* social proof */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+              <div style={{ display: "flex" }}>
+                {[["RA", "var(--ll-secondary)"], ["MK", "var(--ll-tertiary-container)"], ["SH", "var(--ll-success)"], ["+", "var(--ll-primary-container)"]].map(([t, bg], i) => (
+                  <span key={i} style={{ width: 30, height: 30, borderRadius: "50%", background: bg, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, border: "2px solid #fff", marginLeft: i ? -10 : 0 }}>{t}</span>
+                ))}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,.92)" }}>১,২৪০+ classmates online now</span>
+            </div>
+
+            {/* CTA */}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", color: "var(--ll-secondary)", fontWeight: 800, fontSize: 15, padding: "12px 22px", borderRadius: 999, boxShadow: "0 6px 18px rgba(0,0,0,.18)" }}>
+              Enter StudyCircle <ChevronRight size={18} />
+            </span>
           </div>
-          <span style={{ color: "var(--ll-on-surface-variant)", flex: "none", display: "flex" }}><ChevronRight size={20} /></span>
         </Link>
 
         {/* Jump back in */}
@@ -116,7 +168,7 @@ function CourseCard({ title, original, effective }: { title: string; original: s
           <span style={{ textDecoration: "line-through", color: "var(--ll-on-surface-variant)", fontSize: 13 }}>৳{original}</span>
           <span style={{ color: "var(--ll-success)", fontWeight: 700, fontSize: 17 }}>৳{effective}</span>
         </div>
-        <DeadButton style={{ width: "100%", border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 14, padding: 11, borderRadius: 999 }}></DeadButton>
+        <DeadButton style={{ width: "100%", border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 14, padding: 11, borderRadius: 999 }}>৩ দিন ফ্রিতে শিখুন</DeadButton>
       </div>
     </div>
   );
