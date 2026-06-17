@@ -65,11 +65,24 @@ This build follows the **build spec**:
 - **Logout is the only reset (§3):** clears the session's mutable layer; never
   touches the seeded world. Exit/close/restart resets nothing.
 
-Visuals to keep from the prototype: phone frame (390×812), the lavender wash, the
-5-item bottom nav with the **Home⇄StudyCircle two-position radio toggle** (house +
-book icons, active side filled, centered between Study and Inbox), NameCard with
-no photo + clickable @user_tag/class/rank/privacy chips, ShikhoEmbed deep-indigo
-card, the AI-composer Explore search, bottom-sheet modals.
+Visuals to keep from the prototype: the lavender wash, the 5-item bottom nav with
+the **Home⇄StudyCircle two-position radio toggle** (house + book icons, active
+side filled, centered between Study and Inbox), NameCard with no photo + clickable
+@user_tag/class/rank/privacy chips, ShikhoEmbed deep-indigo card, the AI-composer
+Explore search, bottom-sheet modals.
+
+**Shell & motion (current):**
+- **Full-bleed shell** — the app/login frame fills the viewport (`width: 100%`,
+  `height: 100dvh`), **square outer corners**, no outer padding; inner cards keep
+  their rounding. Set in the `shell`/`frame` style objects in `app-shell.tsx` and
+  `page.tsx`. (There is no aspect-ratio / device-vs-aspect display mode — an
+  earlier `DISPLAY_MODE`/`ASPECT_RATIO_*` experiment was rolled back; don't
+  reintroduce those env vars unless asked.)
+- **Motion** lives in `globals.css`: fades + pushes only (`sc-anim-*`), a press
+  scale on `button`/`a`, all under `prefers-reduced-motion`.
+- **Page-switch loading bar** — a gradient `.sc-progress` element keyed by
+  pathname in `app-shell.tsx` sweeps on every route change.
+- Bottom nav **auto-hides on scroll-down**, returns on scroll-up.
 
 ## Data model (spec §7)
 

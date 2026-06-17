@@ -29,6 +29,7 @@ A working demo of **StudyCircle** — a social feature inside the **Shikho** app
 - [Free-trial model](#free-trial-model)
 - [npm scripts](#npm-scripts)
 - [Theming / design tokens](#theming--design-tokens)
+- [Display & motion](#display--motion)
 - [Project structure](#project-structure)
 - [Data model & persistence](#data-model--persistence)
 - [Troubleshooting](#troubleshooting)
@@ -286,6 +287,24 @@ All colors, typography, spacing, radius, and elevation live in **one file**:
 Edit a value, save, and it hot-reloads everywhere — components reference the tokens
 and never hardcode a hex. This mirrors the `DESIGN.md` "Luminous Learning" system
 (pink-lead hero, indigo-deep surfaces, Baloo Da 2 + Be Vietnam Pro).
+
+---
+
+## Display & motion
+
+- **Full-bleed shell.** The app shell fills the viewport edge-to-edge
+  (`width: 100%`, `height: 100dvh`) with **square outer corners** and no outer
+  padding — only the *inner* cards keep their rounding. Defined by the `shell` /
+  `frame` style objects in [`app-shell.tsx`](src/components/app-shell.tsx) and the
+  login [`page.tsx`](src/app/page.tsx). (`100dvh` tracks the visible viewport so
+  it fits around mobile browser chrome.)
+- **Motion is centralized** in [`globals.css`](src/app/globals.css) — only fades
+  and pushes (`sc-anim-*` keyframes), short durations, and a tactile press-scale
+  on every `button`/`a`. All of it respects `prefers-reduced-motion`.
+- **Page-switch loading bar.** A gradient (indigo→pink) bar sweeps across the top
+  of the shell on every route change — a keyed `.sc-progress` element in
+  `app-shell.tsx` that replays whenever the path changes.
+- The bottom nav auto-hides on scroll-down and returns on scroll-up.
 
 ---
 
