@@ -116,7 +116,7 @@ function CourseCard({ title, original, effective }: { title: string; original: s
           <span style={{ textDecoration: "line-through", color: "var(--ll-on-surface-variant)", fontSize: 13 }}>৳{original}</span>
           <span style={{ color: "var(--ll-success)", fontWeight: 700, fontSize: 17 }}>৳{effective}</span>
         </div>
-        <DeadButton style={{ width: "100%", border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 14, padding: 11, borderRadius: 999 }}>৩ দিন ফ্রিতে শিখুন</DeadButton>
+        <DeadButton style={{ width: "100%", border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 14, padding: 11, borderRadius: 999 }}></DeadButton>
       </div>
     </div>
   );
