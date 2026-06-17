@@ -161,7 +161,9 @@ export function AppShell({
       <main style={shell}>
         <div style={frame}>
           <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} onScrollCapture={onScroll}>
-            {children}
+            <div key={pathname} className="sc-anim-fade" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+              {children}
+            </div>
             {showTabs && <BottomNav pathname={pathname} go={go} deadEnd={ctx.deadEnd} hidden={navHidden} />}
           </div>
 
@@ -233,8 +235,8 @@ function NavBtn({ label, active, onClick, children }: { label: string; active?: 
 function Sidebar({ session, go, onClose, deadEnd }: { session: ShellSession; go: (p: string) => void; onClose: () => void; deadEnd: () => void }) {
   return (
     <>
-      <div onClick={onClose} style={scrim} />
-      <div style={drawer}>
+      <div onClick={onClose} style={scrim} className="sc-anim-fade" />
+      <div style={drawer} className="sc-anim-slide-left">
         <div style={{ padding: "0 22px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid var(--ll-surface-container-high)" }}>
           <Disc initials={session.initials} size={48} />
           <div style={{ minWidth: 0 }}>
@@ -272,8 +274,8 @@ function DrawerItem({ icon, label, onClick }: { icon: ReactNode; label: string; 
 function Sheet({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
     <>
-      <div onClick={onClose} style={scrim} />
-      <div style={sheet}>{children}</div>
+      <div onClick={onClose} style={scrim} className="sc-anim-fade" />
+      <div style={sheet} className="sc-anim-slide-up">{children}</div>
     </>
   );
 }
@@ -344,7 +346,7 @@ function ChipInfo({ title, body, showCta, courseLine, onClose, onCta }: { title:
 }
 
 function Toast({ msg }: { msg: string }) {
-  return <div style={toastStyle}>{msg}</div>;
+  return <div style={toastStyle} className="sc-anim-fade-push">{msg}</div>;
 }
 
 // ── small presentational ─────────────────────────────────────────────────────

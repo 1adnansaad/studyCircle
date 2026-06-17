@@ -20,3 +20,31 @@ button { font-family: inherit; }
 /* Hidden scrollbars inside scroll regions (mobile feel) */
 .sc-scroll::-webkit-scrollbar { width: 0; height: 0; }
 .sc-scroll { scrollbar-width: none; }
+
+/* ── Motion: simple pushes & fades ────────────────────────────────────────────
+   Everything animates the same two ways — a fade, or a push (slide/scale).
+   Durations stay short (~120–300ms) and easing is gentle. */
+
+@keyframes sc-fade        { from { opacity: 0; }                              to { opacity: 1; } }
+@keyframes sc-fade-push   { from { opacity: 0; transform: translateY(8px); }  to { opacity: 1; transform: translateY(0); } }
+@keyframes sc-slide-up    { from { transform: translateY(100%); }             to { transform: translateY(0); } }
+@keyframes sc-slide-left  { from { transform: translateX(-100%); }            to { transform: translateX(0); } }
+
+.sc-anim-fade      { animation: sc-fade .22s ease both; }
+.sc-anim-fade-push { animation: sc-fade-push .25s ease both; }
+.sc-anim-slide-up  { animation: sc-slide-up .28s cubic-bezier(.22,.61,.36,1) both; }
+.sc-anim-slide-left{ animation: sc-slide-left .28s cubic-bezier(.22,.61,.36,1) both; }
+
+/* Tactile press: every tappable control eases on press (push-in), per DESIGN. */
+button, a { transition: transform .12s ease, opacity .12s ease, filter .12s ease; }
+button:active, a:active { transform: scale(0.97); }
+
+/* Respect reduced-motion: drop animations and press scaling. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  button:active, a:active { transform: none; }
+}
