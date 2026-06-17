@@ -4,9 +4,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
+  useRef,
   useState,
   useTransition,
   type ReactNode,
+  type UIEvent,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -113,6 +116,19 @@ export function AppShell({
   const [sidebar, setSidebar] = useState(false);
   const showTabs = TAB_ROUTES.includes(pathname);
 
+  // Bottom nav auto-hides on scroll-down, returns on scroll-up (§4).
+  const [navHidden, setNavHidden] = useState(false);
+  const lastScroll = useRef(0);
+  useEffect(() => { setNavHidden(false); lastScroll.current = 0; }, [pathname]);
+  function onScroll(e: UIEvent) {
+    const top = (e.target as HTMLElement).scrollTop;
+    const delta = top - lastScroll.current;
+    if (top <= 8) setNavHidden(false);
+    else if (delta > 6) setNavHidden(true);
+    else if (delta < -6) setNavHidden(false);
+    lastScroll.current = top;
+  }
+
   function go(path: string) {
     setSidebar(false);
     router.push(path);
@@ -144,9 +160,9 @@ export function AppShell({
     <AppCtx.Provider value={ctx}>
       <main style={shell}>
         <div style={frame}>
-          <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+          <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} onScrollCapture={onScroll}>
             {children}
-            {showTabs && <BottomNav pathname={pathname} go={go} deadEnd={ctx.deadEnd} />}
+            {showTabs && <BottomNav pathname={pathname} go={go} deadEnd={ctx.deadEnd} hidden={navHidden} />}
           </div>
 
           {sidebar && <Sidebar session={session} go={go} onClose={() => setSidebar(false)} deadEnd={ctx.deadEnd} />}
@@ -184,11 +200,11 @@ export function AppShell({
 
 // ── Bottom nav (Search · পদ্ধতি · [toggle] · ইনবক্স · শিখো AI) ─────────────────
 
-function BottomNav({ pathname, go, deadEnd }: { pathname: string; go: (p: string) => void; deadEnd: () => void }) {
+function BottomNav({ pathname, go, deadEnd, hidden }: { pathname: string; go: (p: string) => void; deadEnd: () => void; hidden: boolean }) {
   const onHome = pathname === "/home";
   const toggleTarget = onHome ? "/studycircle" : "/home";
   return (
-    <nav style={nav}>
+    <nav style={{ ...nav, transform: hidden ? "translateY(110%)" : "translateY(0)", transition: "transform .25s ease" }}>
       <NavBtn label="Search" active={pathname === "/explore"} onClick={() => go("/explore")}><SearchIcon /></NavBtn>
       <NavBtn label="পদ্ধতি" onClick={deadEnd}><MethodIcon /></NavBtn>
       <button aria-label="Switch Home / StudyCircle" onClick={() => go(toggleTarget)} style={toggleBtn}>

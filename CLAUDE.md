@@ -121,7 +121,14 @@ First run creates `./data/app.db` and (from Step 2 on) loads the seed if missing
       NOTE: much of Step 5's gating shipped here too (upsell on gated writes,
       join-confirm, bookmark-at-cap remove modal, dead-end modal, follower math) —
       Step 5 becomes verification + edge cases.
-- [ ] **5. Features + free-trial gating (§1)** incl. follower-count behavior (§3).
+- [x] **5. Features + free-trial gating (§1)** incl. follower-count behavior (§3).
+      Verified via a temporary self-test route (real repo code, synthetic session):
+      bookmark/join/search caps fill→block→remove-reopens; join "no leaving";
+      follow ±1 derived count; all 12 assertions pass. Caps proven env-configurable
+      (BOOKMARK_CAP=3 → enforced). Gating airtight: ONLY auth + the 4 allowed-write
+      server actions exist, so gated writes (comment/like/repost/quote/share/post)
+      cannot persist — each routes to the upsell. Added bottom-nav auto-hide on
+      scroll (§4).
 - [ ] **6. Explore search → LLM (§9)** (server-side; provider via LLM_PROVIDER).
 - [ ] **7. Logout-reset (§3)** + re-verify persist-on-exit / reset-on-logout.
 
