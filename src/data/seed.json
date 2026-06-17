@@ -1,0 +1,120 @@
+{
+  "_note": "Seed SOURCE (spec §8). Committed; the live ./data/app.db is not. Content is real Bengali; counts are stored as integers and rendered with Bengali numerals (০–৯) in the UI. Leans C9–C12 subjects so embeds/upsells point at high-margin courses. created_at offsets are hours-ago at seed time.",
+
+  "profiles": [
+    { "id": "pr_motion",   "user_tag": "@motion_maven",    "class": 10, "leaderboard_pos": 8,  "follower_count_seed": 1284, "following_count_seed": 312, "bio": "SSC ২৮ · পদার্থবিজ্ঞান নিয়ে মাথা ঘামাই।" },
+    { "id": "pr_bond",     "user_tag": "@bond_breaker",    "class": 9,  "leaderboard_pos": 21, "follower_count_seed": 642,  "following_count_seed": 198, "bio": "রসায়ন ভালোবাসি, পর্যায় সারণি মুখস্থ করার চেষ্টায় আছি।" },
+    { "id": "pr_mcq",      "user_tag": "@mcq_marathon",    "class": 11, "leaderboard_pos": 3,  "follower_count_seed": 3120, "following_count_seed": 87,  "bio": "প্রতি রাত ৯টায় MCQ ম্যারাথন।" },
+    { "id": "pr_liate",    "user_tag": "@liate_legend",    "class": 12, "leaderboard_pos": 15, "follower_count_seed": 2050, "following_count_seed": 144, "bio": "HSC ২৬ · ক্যালকুলাস আর বোর্ড প্রস্তুতি।" },
+    { "id": "pr_climate",  "user_tag": "@climate_curious", "class": 9,  "leaderboard_pos": 40, "follower_count_seed": 318,  "following_count_seed": 256, "bio": "ভূগোল আর জলবায়ু নিয়ে কৌতূহলী।" },
+    { "id": "pr_calc",     "user_tag": "@calculus_queen",  "class": 12, "leaderboard_pos": 5,  "follower_count_seed": 2740, "following_count_seed": 121, "bio": "গণিত অলিম্পিয়াড · প্রমাণ লিখতে ভালো লাগে।" },
+    { "id": "pr_organic",  "user_tag": "@organic_ace",     "class": 11, "leaderboard_pos": 9,  "follower_count_seed": 1190, "following_count_seed": 173, "bio": "জৈব রসায়নের বিক্রিয়া গুছিয়ে রাখি।" },
+    { "id": "pr_bio",      "user_tag": "@bio_diagrams",    "class": 10, "leaderboard_pos": 12, "follower_count_seed": 980,  "following_count_seed": 210, "bio": "লেবেল করা ডায়াগ্রাম আঁকি।" }
+  ],
+
+  "groups": [
+    { "id": "g1", "name": "Physics Problem Solvers", "subject": "Physics",   "topic": "পদার্থবিজ্ঞান • ক্লাস ৯–১০",  "description": "SSC পদার্থবিজ্ঞানের জন্য প্রতিদিন MCQ প্র্যাকটিস আর ফ্রি-বডি ডায়াগ্রামের সাহায্য।", "privacy": "Public",    "active_users": 1240, "posts_per_day": 38, "is_suggested": 1 },
+    { "id": "g2", "name": "HSC Chemistry Hub",       "subject": "Chemistry", "topic": "রসায়ন • ক্লাস ১১–১২",        "description": "জৈব বিক্রিয়া, ল্যাব টিপস আর বোর্ড প্রশ্নের বিশ্লেষণ।", "privacy": "Public",    "active_users": 890,  "posts_per_day": 21, "is_suggested": 1 },
+    { "id": "g3", "name": "Math Olympiad Prep",      "subject": "Math",      "topic": "গণিত • ক্লাস ৮–১২",           "description": "প্রতিদিনের সমস্যা, প্রমাণ আর কন্টেস্ট কৌশল এক জায়গায়।", "privacy": "Public",    "active_users": 2015, "posts_per_day": 54, "is_suggested": 1 },
+    { "id": "g4", "name": "English Writing Lab",     "subject": "English",   "topic": "ইংরেজি • ক্লাস ৯–১২",         "description": "রচনা ফিডব্যাক, গ্রামার ড্রিল আর শব্দভাণ্ডার গঠন।", "privacy": "Followers", "active_users": 1560, "posts_per_day": 29, "is_suggested": 1 },
+    { "id": "g5", "name": "Biology Diagram Club",    "subject": "Biology",   "topic": "জীববিজ্ঞান • ক্লাস ৯–১০",      "description": "লেবেল করা ডায়াগ্রাম, নেমোনিক আর দ্রুত রিভিশন নোট।", "privacy": "Public",    "active_users": 670,  "posts_per_day": 15, "is_suggested": 0 }
+  ],
+
+  "lessons": [
+    { "id": "l1", "title": "নিউটনের গতিসূত্র — সম্পূর্ণ অধ্যায়", "subject": "Physics",   "class": 9,  "duration": "14:22", "course_ref": "c9-science",       "thumbnail_path": null },
+    { "id": "l2", "title": "রাসায়নিক বন্ধন — আয়নিক বনাম সমযোজী", "subject": "Chemistry", "class": 9,  "duration": "11:08", "course_ref": "c9-science",       "thumbnail_path": null },
+    { "id": "l3", "title": "ইন্টিগ্রেশন বাই পার্টস — LIATE নিয়ম", "subject": "Math",      "class": 12, "duration": "18:45", "course_ref": "c12-higher-math", "thumbnail_path": null },
+    { "id": "l4", "title": "সালোকসংশ্লেষণ — সম্পূর্ণ প্রক্রিয়া",   "subject": "Biology",   "class": 9,  "duration": "13:30", "course_ref": "c9-science",       "thumbnail_path": null },
+    { "id": "l5", "title": "জৈব রসায়ন — নামকরণের নিয়ম",          "subject": "Chemistry", "class": 11, "duration": "22:14", "course_ref": "c11-chemistry",   "thumbnail_path": null },
+    { "id": "l6", "title": "ত্রিকোণমিতিক অভেদ — সম্পূর্ণ প্রমাণ",  "subject": "Math",      "class": 10, "duration": "16:55", "course_ref": "c10-math",        "thumbnail_path": null },
+    { "id": "l7", "title": "জলবায়ু অঞ্চল — বাংলাদেশ ও বিশ্ব",     "subject": "Geography", "class": 9,  "duration": "9:42",  "course_ref": "c9-science",       "thumbnail_path": null }
+  ],
+
+  "posts": [
+    { "id": "p1",  "author": "pr_motion",  "group_id": null, "privacy": "Public",    "hours_ago": 2,   "like_count": 42,  "comment_count": 12, "repost_count": 5,
+      "body": "নিউটনের তৃতীয় সূত্রটা অবশেষে মাথায় ঢুকল — অ্যানিমেটেড লেসনটা তিনবার দেখার পর 😅 ক্রিয়া-প্রতিক্রিয়া জোড়া নিয়ে যাদের সমস্যা, ফ্রি-বডি ডায়াগ্রামে দুটো বল আলাদা করে আঁকলেই পরিষ্কার হয়ে যায়।",
+      "embed": { "lesson_id": "l1", "lesson_title": "নিউটনের গতিসূত্র — সম্পূর্ণ অধ্যায়", "subject": "পদার্থবিজ্ঞান • ক্লাস ৯", "course_ref": "c9-science" } },
+
+    { "id": "p2",  "author": "pr_bond",    "group_id": null, "privacy": "Followers", "hours_ago": 4,   "like_count": 88,  "comment_count": 24, "repost_count": 17,
+      "body": "রাসায়নিক বন্ধন বুঝতে যেটা আমাকে সবচেয়ে সাহায্য করেছে সেই লেসনটা শেয়ার করলাম। প্রথম ৫ মিনিট দেখো — আয়নিক বনাম সমযোজী অংশটা দারুণ।",
+      "embed": { "lesson_id": "l2", "lesson_title": "রাসায়নিক বন্ধন — আয়নিক বনাম সমযোজী", "subject": "রসায়ন • ক্লাস ৯", "course_ref": "c9-science" } },
+
+    { "id": "p3",  "author": "pr_mcq",     "group_id": null, "privacy": "Public",    "hours_ago": 6,   "like_count": 130, "comment_count": 56, "repost_count": 9,
+      "body": "HSC পদার্থবিজ্ঞান MCQ প্র্যাকটিসের জন্য একটা স্টাডি গ্রুপ শুরু করছি — আগ্রহী হলে 🔥 দাও। প্রতি রাত ৯টায় ২০টা প্রশ্ন।", "embed": null },
+
+    { "id": "p4",  "author": "pr_liate",   "group_id": null, "privacy": "Public",    "hours_ago": 9,   "like_count": 201, "comment_count": 73, "repost_count": 44,
+      "body": "ক্যালকুলাসে যারা আছো — ইন্টিগ্রেশন বাই পার্টসের ট্রিক হলো LIATE: Log, Inverse, Algebra, Trig, Exponential। এই ক্রমে u বেছে নাও, প্রায় কখনো ভুল হয় না।",
+      "embed": { "lesson_id": "l3", "lesson_title": "ইন্টিগ্রেশন বাই পার্টস — LIATE নিয়ম", "subject": "গণিত • ক্লাস ১২", "course_ref": "c12-higher-math" } },
+
+    { "id": "p5",  "author": "pr_climate", "group_id": null, "privacy": "Public",    "hours_ago": 26,  "like_count": 17,  "comment_count": 8,  "repost_count": 1,
+      "body": "মডেল টেস্টের আগে জলবায়ু অঞ্চলের ভূগোল অধ্যায়ের ভালো নোট কারো কাছে আছে? আমারটা একদম এলোমেলো 🙈", "embed": null },
+
+    { "id": "p6",  "author": "pr_calc",    "group_id": null, "privacy": "Public",    "hours_ago": 11,  "like_count": 96,  "comment_count": 19, "repost_count": 7,
+      "body": "সীমা (limit) বের করার সময় L'Hôpital-এর নিয়ম মনে রাখো — ০/০ বা ∞/∞ ফর্মে আটকে গেলে লব আর হরকে আলাদাভাবে ডিফারেনশিয়েট করো।", "embed": null },
+
+    { "id": "p7",  "author": "pr_organic", "group_id": null, "privacy": "Public",    "hours_ago": 13,  "like_count": 54,  "comment_count": 15, "repost_count": 3,
+      "body": "জৈব রসায়নের নামকরণ নিয়ে ভয় কাটাতে চাইলে আগে সবচেয়ে দীর্ঘ কার্বন চেইন খুঁজে বের করা প্র্যাকটিস করো। বাকিটা এমনিই সহজ হয়ে যায়।",
+      "embed": { "lesson_id": "l5", "lesson_title": "জৈব রসায়ন — নামকরণের নিয়ম", "subject": "রসায়ন • ক্লাস ১১", "course_ref": "c11-chemistry" } },
+
+    { "id": "p8",  "author": "pr_bio",     "group_id": null, "privacy": "Public",    "hours_ago": 16,  "like_count": 73,  "comment_count": 21, "repost_count": 6,
+      "body": "সালোকসংশ্লেষণের পুরো প্রক্রিয়াটা একটা লেবেল করা ডায়াগ্রামে আঁকলে পরীক্ষায় আর ভুল হয় না। আমার আঁকা ডায়াগ্রামটা শেয়ার করব নাকি?", "embed": null },
+
+    { "id": "p9",  "author": "pr_mcq",     "group_id": null, "privacy": "Public",    "hours_ago": 20,  "like_count": 61,  "comment_count": 9,  "repost_count": 2,
+      "body": "আজকের MCQ ম্যারাথন শেষ — যারা যোগ দিয়েছিলে সবাইকে ধন্যবাদ! কালকের টপিক: তাপগতিবিদ্যা।", "embed": null },
+
+    { "id": "p10", "author": "pr_motion",  "group_id": null, "privacy": "Public",    "hours_ago": 30,  "like_count": 38,  "comment_count": 6,  "repost_count": 2,
+      "body": "যাদের SSC পদার্থবিজ্ঞানে বেগ আর ত্বরণ গুলিয়ে যায় — মনে রাখো, বেগ হলো অবস্থানের পরিবর্তনের হার, আর ত্বরণ হলো বেগের পরিবর্তনের হার।", "embed": null },
+
+    { "id": "p11", "author": "pr_bond",    "group_id": null, "privacy": "Public",    "hours_ago": 34,  "like_count": 29,  "comment_count": 11, "repost_count": 0,
+      "body": "পর্যায় সারণি মুখস্থ করার সহজ উপায় খুঁজছি। কারো কাছে ভালো নেমোনিক থাকলে কমেন্টে দাও 🙏", "embed": null },
+
+    { "id": "p12", "author": "pr_liate",   "group_id": null, "privacy": "Public",    "hours_ago": 40,  "like_count": 144, "comment_count": 33, "repost_count": 12,
+      "body": "বোর্ড পরীক্ষার আগে শেষ এক সপ্তাহে নতুন কিছু না পড়ে আগের ভুলগুলো রিভিশন করাই বুদ্ধিমানের কাজ।", "embed": null },
+
+    { "id": "gp1", "author": "pr_motion",  "group_id": "g1", "privacy": "Public",    "hours_ago": 3,   "like_count": 22,  "comment_count": 14, "repost_count": 1,
+      "body": "আজকের সমস্যা: ৫ কেজির একটা বস্তুকে ১০ নিউটন বল দিলে ত্বরণ কত? উত্তর কমেন্টে দাও, কাল সমাধান দেব।", "embed": null },
+
+    { "id": "gp2", "author": "pr_climate", "group_id": "g1", "privacy": "Public",    "hours_ago": 7,   "like_count": 9,   "comment_count": 5,  "repost_count": 0,
+      "body": "ফ্রি-বডি ডায়াগ্রাম আঁকার সময় ঘর্ষণ বল কোন দিকে আঁকব সেটা নিয়ে confusion হয়। কেউ একটু বুঝিয়ে দেবে?", "embed": null },
+
+    { "id": "gp3", "author": "pr_organic", "group_id": "g2", "privacy": "Public",    "hours_ago": 5,   "like_count": 41,  "comment_count": 12, "repost_count": 4,
+      "body": "অ্যালকিন থেকে অ্যালকোহল বানানোর বিক্রিয়াগুলো একসাথে গুছিয়ে রাখলাম — বোর্ডে প্রায়ই আসে।",
+      "embed": { "lesson_id": "l5", "lesson_title": "জৈব রসায়ন — নামকরণের নিয়ম", "subject": "রসায়ন • ক্লাস ১১", "course_ref": "c11-chemistry" } },
+
+    { "id": "gp4", "author": "pr_bond",    "group_id": "g2", "privacy": "Public",    "hours_ago": 12,  "like_count": 18,  "comment_count": 7,  "repost_count": 2,
+      "body": "ল্যাবে টাইট্রেশন করার সময় কোন নির্দেশক কখন ব্যবহার করব তার একটা ছোট তালিকা বানিয়েছি।", "embed": null },
+
+    { "id": "gp5", "author": "pr_calc",    "group_id": "g3", "privacy": "Public",    "hours_ago": 4,   "like_count": 33,  "comment_count": 16, "repost_count": 5,
+      "body": "আজকের problem of the day: প্রমাণ করো যে যেকোনো দুটি ক্রমিক পূর্ণসংখ্যার গুণফল সবসময় জোড়।", "embed": null },
+
+    { "id": "gp6", "author": "pr_mcq",     "group_id": "g3", "privacy": "Public",    "hours_ago": 10,  "like_count": 27,  "comment_count": 8,  "repost_count": 3,
+      "body": "কন্টেস্টে সময় বাঁচানোর জন্য সংখ্যাতত্ত্বের বেসিক সূত্রগুলো মুখস্থ রাখা জরুরি।", "embed": null }
+  ],
+
+  "comments": [
+    { "id": "c1", "post_id": "p1", "author": "pr_bio",     "parent": null, "hours_ago": 1,  "body": "একদম! দুটো বল আলাদা করে আঁকার পরেই আমার কাছে পরিষ্কার হয়েছিল।" },
+    { "id": "c2", "post_id": "p1", "author": "pr_climate", "parent": null, "hours_ago": 1,  "body": "দাঁড়াও, প্রতিক্রিয়া বলটা তাহলে অন্য একটা বস্তুর উপর কাজ করে? এই অংশটাই আমি বারবার মিস করি।" },
+    { "id": "c3", "post_id": "p1", "author": "pr_motion",  "parent": "c2", "hours_ago": 0,  "body": "ঠিক তাই — সমান মানের, বিপরীত দিকে, কিন্তু দুটো ভিন্ন বস্তুর উপর। এটাই পুরো ট্রিক।" },
+
+    { "id": "c4", "post_id": "p2", "author": "pr_organic", "parent": null, "hours_ago": 3,  "body": "এই লেসনটা আসলেই আন্ডাররেটেড। ইলেকট্রন ট্রান্সফারের অ্যানিমেশনটা খুব পরিষ্কার।" },
+    { "id": "c5", "post_id": "p2", "author": "pr_bio",     "parent": null, "hours_ago": 2,  "body": "আজ রাতের জন্য বুকমার্ক করে রাখলাম, ধন্যবাদ!" },
+
+    { "id": "c6", "post_id": "p3", "author": "pr_organic", "parent": null, "hours_ago": 5,  "body": "আমি আছি! রাত ৯টা একদম পারফেক্ট সময়।" },
+    { "id": "c7", "post_id": "p3", "author": "pr_bio",     "parent": null, "hours_ago": 4,  "body": "🔥 আমাকেও যোগ করো।" },
+
+    { "id": "c8", "post_id": "p4", "author": "pr_calc",    "parent": null, "hours_ago": 7,  "body": "LIATE বোর্ড পরীক্ষায় আমাকে বাঁচিয়েছে। আগে শিখলে আরও ভালো হতো।" },
+
+    { "id": "c9", "post_id": "gp1", "author": "pr_climate", "parent": null, "hours_ago": 2, "body": "ত্বরণ = বল ÷ ভর = ১০ ÷ ৫ = ২ m/s²?" },
+    { "id": "c10","post_id": "gp1", "author": "pr_motion",  "parent": "c9", "hours_ago": 1, "body": "একদম ঠিক! 👏" }
+  ],
+
+  "profile_groups": [
+    { "profile_id": "pr_motion",  "group_id": "g1" },
+    { "profile_id": "pr_climate", "group_id": "g1" },
+    { "profile_id": "pr_organic", "group_id": "g2" },
+    { "profile_id": "pr_bond",    "group_id": "g2" },
+    { "profile_id": "pr_calc",    "group_id": "g3" },
+    { "profile_id": "pr_mcq",     "group_id": "g3" },
+    { "profile_id": "pr_bio",     "group_id": "g5" }
+  ]
+}
