@@ -219,14 +219,14 @@ function BottomNav({ pathname, go, deadEnd, hidden }: { pathname: string; go: (p
   return (
     <nav style={{ ...nav, transform: hidden ? "translateY(110%)" : "translateY(0)", transition: "transform .25s ease" }}>
       <NavBtn label="Search" active={pathname === "/explore"} onClick={() => go("/explore")}><img src="/nav-icons/search.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
-      <NavBtn label="পদ্ধতি" onClick={deadEnd}><img src="/nav-icons/method.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
+      <NavBtn label="Courses" onClick={deadEnd}><img src="/nav-icons/method.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
       <button aria-label="Switch Home / StudyCircle" onClick={() => go(toggleTarget)} style={toggleBtn}>
         <span style={toggleTrack}>
           <span style={onHome ? toggleSegActive : toggleSeg}><img src="/nav-icons/home.png" alt="" style={{ height: 20, width: "auto", objectFit: "contain", opacity: onHome ? 1 : 0.45 }} /></span>
           <span style={!onHome ? toggleSegActive : toggleSeg}><img src="/nav-icons/studycircle.png" alt="" style={{ height: 20, width: "auto", objectFit: "contain", opacity: !onHome ? 1 : 0.45 }} /></span>
         </span>
       </button>
-      <NavBtn label="ইনবক্স" onClick={deadEnd}><img src="/nav-icons/inbox.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
+      <NavBtn label="Inbox" onClick={deadEnd}><img src="/nav-icons/inbox.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
       <NavBtn label="শিখো AI" onClick={deadEnd}><img src="/nav-icons/shikho-ai.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
     </nav>
   );

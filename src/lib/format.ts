@@ -19,7 +19,7 @@ export function bnCount(n: number): string {
 
 /** "ক্লাস ৯" */
 export function classTag(klass: number): string {
-  return `ক্লাস ${bn(klass)}`;
+  return `CLass ${(klass)}`;
 }
 
 /** Seeded leaderboard tag, e.g. "র‍্যাঙ্ক #৮". null → no tag. */

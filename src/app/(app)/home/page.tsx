@@ -132,7 +132,7 @@ export default function HomePage() {
         </Link>
 
         {/* Jump back in */}
-        <div>
+        {/* <div>
           <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 18, color: "var(--ll-on-surface)", display: "block", marginBottom: 12 }}>আবার শুরু করো</span>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <SubjectChip bg="var(--ll-primary-fixed)" fg="var(--ll-on-primary-fixed-variant)" label="পদার্থবিজ্ঞান" />
@@ -140,7 +140,7 @@ export default function HomePage() {
             <SubjectChip bg="var(--ll-success-container)" fg="var(--ll-on-success-container)" label="গণিত" />
             <SubjectChip bg="var(--ll-tertiary-fixed)" fg="var(--ll-on-tertiary-fixed-variant)" label="জীববিজ্ঞান" />
           </div>
-        </div>
+        </div> */}
       </div>
       </ScrollBody>
     </Screen>

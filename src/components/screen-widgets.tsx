@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import type { PostCardVM, GroupCardVM } from "@/lib/view";
 import { useApp } from "./app-shell";
 import { PostCard } from "./post-card";
-import { SparkleIcon, ImageIcon, InfoIcon, PlayIcon } from "./icons";
+import { SparkleIcon, ImageIcon, InfoIcon, PlayIcon, PlusIcon } from "./icons";
 import { createPostAction, createCommentAction } from "@/app/actions";
 
 // ── Generic dead/out-of-scope button ─────────────────────────────────────────
@@ -139,7 +139,7 @@ export function GroupComposeButton() {
   const { upsell } = useApp();
   return (
     <button onClick={() => upsell({ title: "Posting in groups is a subscriber feature", body: "Subscribe to post inside study groups." })} style={{ position: "absolute", right: 18, bottom: 22, display: "flex", alignItems: "center", gap: 8, border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", boxShadow: "var(--ll-shadow-cta)", padding: "14px 20px", borderRadius: 999, fontWeight: 600, fontSize: 15, zIndex: 20 }}>
-      <SparkleIcon size={18} />Post in group
+      <PlusIcon size={18} />Post in group
     </button>
   );
 }
