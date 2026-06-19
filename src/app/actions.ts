@@ -15,6 +15,7 @@ import {
   createPost,
   createComment,
   createRepost,
+  undoRepost,
   listSearchCorpus,
   llmTokensUsed,
   addLlmTokens,
@@ -132,6 +133,13 @@ export async function repostAction(postId: string): Promise<{ status: "ok"; post
   if (!res.ok) return { status: "at_cap" };
   refresh();
   return { status: "ok", postId: res.postId };
+}
+
+export async function unrepostAction(postId: string): Promise<{ status: "ok" }> {
+  const sid = requireSession();
+  undoRepost(sid, postId);
+  refresh();
+  return { status: "ok" };
 }
 
 // ── Trending topic summaries (Explore card, spec §9) ─────────────────────────

@@ -20,6 +20,7 @@ import {
   getLesson,
   listBookmarkedPosts,
   listBookmarks,
+  listSessionRepostedOriginals,
   listFollows,
   listJoinedGroups,
   bookmarkCount,
@@ -50,8 +51,11 @@ export type PostCardVM = {
   imagePath: string | null;
   embed: EmbedVM | null;
   likes: string;
+  likeCount: number; // raw seed count, for local optimistic like display
   comments: string;
   reposts: string;
+  repostCount: number; // raw count, for optimistic repost-toggle display
+  reposted: boolean; // session has reposted this post (survives reload)
   bookmarked: boolean;
   groupId: string | null;
   isOwn: boolean; // authored by the demo session
@@ -88,7 +92,7 @@ function groupInitials(name: string): string {
   return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? parts[0]?.[1] ?? "");
 }
 
-function postToVM(p: PostRow, bookmarks: Set<string>): PostCardVM {
+function postToVM(p: PostRow, bookmarks: Set<string>, reposted: Set<string> = new Set()): PostCardVM {
   const isOwn = p.author_profile_id == null; // session-authored
   const session = isOwn ? getCurrentSession() : null;
   const author = p.author_profile_id ? getProfile(p.author_profile_id) : null;
@@ -116,8 +120,11 @@ function postToVM(p: PostRow, bookmarks: Set<string>): PostCardVM {
     imagePath: p.image_path,
     embed: embed ? { lessonId: embed.lesson_id, title: embed.lesson_title, subject: embed.subject } : null,
     likes: bnCount(p.like_count),
+    likeCount: p.like_count,
     comments: bnCount(p.comment_count),
     reposts: bnCount(p.repost_count),
+    repostCount: p.repost_count,
+    reposted: reposted.has(p.id),
     bookmarked: bookmarks.has(p.id),
     groupId: p.group_id,
     isOwn,
@@ -144,13 +151,15 @@ function groupToVM(g: GroupRow, joined: Set<string>): GroupCardVM {
 
 export function feedView(sessionId: string): PostCardVM[] {
   const bm = new Set(listBookmarks(sessionId));
-  return listFeedPosts().map((p) => postToVM(p, bm));
+  const rp = new Set(listSessionRepostedOriginals(sessionId));
+  return listFeedPosts().map((p) => postToVM(p, bm, rp));
 }
 
 export function postDetailView(postId: string, sessionId: string) {
   const post = getPost(postId);
   if (!post) return null;
   const bm = new Set(listBookmarks(sessionId));
+  const rp = new Set(listSessionRepostedOriginals(sessionId));
   const session = getCurrentSession();
   const comments: CommentVM[] = listComments(postId).map((c) => {
     const isOwn = c.author_profile_id == null; // session-authored
@@ -167,7 +176,7 @@ export function postDetailView(postId: string, sessionId: string) {
       isReply: !!c.parent_comment_id,
     };
   });
-  return { post: postToVM(post, bm), comments };
+  return { post: postToVM(post, bm, rp), comments };
 }
 
 export function groupsTabView(sessionId: string) {
@@ -187,9 +196,10 @@ export function groupView(groupId: string, sessionId: string) {
   if (!g) return null;
   const joined = new Set(listJoinedGroups(sessionId));
   const bm = new Set(listBookmarks(sessionId));
+  const rp = new Set(listSessionRepostedOriginals(sessionId));
   return {
     group: groupToVM(g, joined),
-    posts: listGroupPosts(groupId).map((p) => postToVM(p, bm)),
+    posts: listGroupPosts(groupId).map((p) => postToVM(p, bm, rp)),
   };
 }
 
@@ -197,6 +207,7 @@ export function profileView(profileIdOrMe: string, sessionId: string) {
   const session = getCurrentSession();
   const isOwn = profileIdOrMe === "me";
   const bm = new Set(listBookmarks(sessionId));
+  const rp = new Set(listSessionRepostedOriginals(sessionId));
 
   if (isOwn && session) {
     return {
@@ -210,7 +221,7 @@ export function profileView(profileIdOrMe: string, sessionId: string) {
       followers: bnCount(0),
       following: bnCount(followingCount(sessionId)),
       isFollowing: false,
-      posts: listPostsBySession(sessionId).map((p) => postToVM(p, bm)),
+      posts: listPostsBySession(sessionId).map((p) => postToVM(p, bm, rp)),
       groups: listJoinedGroups(sessionId)
         .map((id) => getGroup(id))
         .filter((g): g is GroupRow => !!g)
@@ -233,15 +244,16 @@ export function profileView(profileIdOrMe: string, sessionId: string) {
     followers: bnCount(displayedFollowerCount(p.id, sessionId)),
     following: bnCount(p.following_count_seed),
     isFollowing: following.has(p.id),
-    posts: listPostsByProfile(p.id).map((post) => postToVM(post, bm)),
+    posts: listPostsByProfile(p.id).map((post) => postToVM(post, bm, rp)),
     groups: listProfileGroups(p.id).map((g) => groupToVM(g, joined)),
   };
 }
 
 export function bookmarksView(sessionId: string) {
   const bm = new Set(listBookmarks(sessionId));
+  const rp = new Set(listSessionRepostedOriginals(sessionId));
   return {
-    posts: listBookmarkedPosts(sessionId).map((p) => postToVM(p, bm)),
+    posts: listBookmarkedPosts(sessionId).map((p) => postToVM(p, bm, rp)),
     count: bookmarkCount(sessionId),
     cap: publicCaps.bookmarkCap,
     premium: isPremium(sessionId),
@@ -251,19 +263,21 @@ export function bookmarksView(sessionId: string) {
 /** Map ranked post ids → PostCard view-models, preserving rank order. */
 export function searchResultsView(sessionId: string, postIds: string[]): PostCardVM[] {
   const bm = new Set(listBookmarks(sessionId));
+  const rp = new Set(listSessionRepostedOriginals(sessionId));
   return postIds
     .map((id) => getPost(id))
     .filter((p): p is NonNullable<typeof p> => !!p)
-    .map((p) => postToVM(p, bm));
+    .map((p) => postToVM(p, bm, rp));
 }
 
 export function exploreView(sessionId: string) {
   // Default state shows trending = the most-engaged seeded posts.
   const bm = new Set(listBookmarks(sessionId));
+  const rp = new Set(listSessionRepostedOriginals(sessionId));
   const trending = [...listFeedPosts()]
     .sort((a, b) => b.like_count + b.repost_count - (a.like_count + a.repost_count))
     .slice(0, 6)
-    .map((p) => postToVM(p, bm));
+    .map((p) => postToVM(p, bm, rp));
   return {
     trending,
     used: searchesUsed(sessionId),

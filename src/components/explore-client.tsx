@@ -96,7 +96,7 @@ export function ExploreClient({ trending, used, cap, premium, aiDebug }: { trend
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 12, color: text.length >= MAX ? "var(--ll-error)" : "var(--ll-on-surface-variant)" }}>{text.length} / {MAX}</span>
               <button onClick={submit} disabled={pending} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", cursor: "pointer", background: "var(--ll-gradient-deep)", color: "#fff", fontWeight: 600, fontSize: 13, padding: "9px 14px", borderRadius: 999, opacity: pending ? 0.7 : 1 }}>
-                <SparkleIcon size={15} />{pending ? "Searching…" : "Ask Shikho AI"}
+                <SparkleIcon size={15} />{pending ? "Searching…" : "Ask the circle"}
               </button>
             </div>
           </div>
