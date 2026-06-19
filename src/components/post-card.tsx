@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import type { PostCardVM, CommentVM } from "@/lib/view";
 import { useApp } from "./app-shell";
-import { toggleBookmarkAction } from "@/app/actions";
+import { toggleBookmarkAction, repostAction } from "@/app/actions";
 import {
   CommentIcon, HeartIcon, RepostIcon, QuoteIcon, ShareIcon, BookmarkIcon, PlayIcon,
 } from "./icons";
@@ -61,7 +61,7 @@ export function NameLink({ tag, profileId }: { tag: string; profileId: string })
 
 export function PostCard({ post }: { post: PostCardVM }) {
   const router = useRouter();
-  const { upsell, bookmarkAtCap, toast, caps, submitPost } = useApp();
+  const { upsell, bookmarkAtCap, toast, caps, postCapUpsell } = useApp();
   const [, startTransition] = useTransition();
 
   function bookmark() {
@@ -70,6 +70,15 @@ export function PostCard({ post }: { post: PostCardVM }) {
       if (!res.ok && res.reason === "at_cap") bookmarkAtCap();
       else if (res.ok && res.bookmarked) toast(`Bookmarked. ${res.count} of ${caps.bookmarkCap} free-trial bookmarks used.`);
       else if (res.ok && !res.bookmarked) toast("Removed from bookmarks.");
+      router.refresh();
+    });
+  }
+
+  function repost(quote: boolean) {
+    startTransition(async () => {
+      const res = await repostAction(post.id);
+      if (res.status === "at_cap") postCapUpsell();
+      else toast(quote ? "Quoted to your feed." : "Reposted to your feed.");
       router.refresh();
     });
   }
@@ -86,7 +95,20 @@ export function PostCard({ post }: { post: PostCardVM }) {
         <PrivacyChip label={post.privacy} />
       </div>
 
-      <button onClick={() => router.push(`/post/${post.id}`)} style={bodyBtn}>{post.body}</button>
+      {post.repostOf && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 12, fontWeight: 600, color: "var(--ll-secondary)" }}>
+          <RepostIcon size={14} />{post.isOwn ? "You reposted" : "Reposted"} {post.repostOf.tag}
+        </div>
+      )}
+
+      {post.body && <button onClick={() => router.push(`/post/${post.id}`)} style={bodyBtn}>{post.body}</button>}
+
+      {post.repostOf && (
+        <button onClick={() => router.push(`/post/${post.id}`)} style={quoteBox}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "var(--ll-primary)" }}>{post.repostOf.tag}</div>
+          <div style={{ marginTop: 4, fontSize: 14, lineHeight: 1.5, color: "var(--ll-on-surface)" }}>{post.repostOf.body}</div>
+        </button>
+      )}
 
       {post.embed && (
         <button
@@ -106,10 +128,10 @@ export function PostCard({ post }: { post: PostCardVM }) {
       )}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-        <Action onClick={() => submitPost("Comment added")} label={post.comments}><CommentIcon size={19} /></Action>
+        <Action onClick={() => router.push(`/post/${post.id}`)} label={post.comments}><CommentIcon size={19} /></Action>
         <Action onClick={upsell} label={post.likes}><HeartIcon size={19} /></Action>
-        <Action onClick={() => submitPost("Reposted")} label={post.reposts}><RepostIcon size={19} /></Action>
-        <Action onClick={() => submitPost("Quoted")}><QuoteIcon size={19} /></Action>
+        <Action onClick={() => repost(false)} label={post.reposts}><RepostIcon size={19} /></Action>
+        <Action onClick={() => repost(true)}><QuoteIcon size={19} /></Action>
         <Action onClick={upsell}><ShareIcon size={19} /></Action>
         <button onClick={bookmark} style={{ ...actionBtn, color: post.bookmarked ? "var(--ll-secondary)" : "var(--ll-on-surface-variant)" }} aria-label="Bookmark">
           <BookmarkIcon size={19} filled={post.bookmarked} />
@@ -147,6 +169,7 @@ function Action({ onClick, label, children }: { onClick: () => void; label?: str
 
 const card: React.CSSProperties = { background: "var(--ll-surface-container-lowest)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-card)", padding: 16, fontFamily: "var(--ll-font-latin)" };
 const bodyBtn: React.CSSProperties = { display: "block", width: "100%", textAlign: "left", border: "none", background: "transparent", padding: "12px 0 0", cursor: "pointer", fontFamily: "var(--ll-font-latin)", fontSize: 15, lineHeight: 1.55, color: "var(--ll-on-surface)" };
+const quoteBox: React.CSSProperties = { display: "block", width: "100%", textAlign: "left", marginTop: 12, cursor: "pointer", border: "1px solid var(--ll-outline-variant)", background: "var(--ll-surface-container-low)", borderRadius: "var(--ll-radius-md)", padding: "12px 14px", fontFamily: "var(--ll-font-latin)" };
 const embedBtn: React.CSSProperties = { display: "block", width: "100%", textAlign: "left", marginTop: 12, border: "none", cursor: "pointer", padding: 0, borderRadius: "var(--ll-radius-lg)", overflow: "hidden", background: "var(--ll-gradient-deep)", boxShadow: "var(--ll-shadow-deep)" };
 const embedIcon: React.CSSProperties = { width: 46, height: 46, borderRadius: 12, background: "rgba(255,255,255,.16)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" };
 const actionBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 5, border: "none", background: "transparent", cursor: "pointer", color: "var(--ll-on-surface-variant)", padding: 0 };

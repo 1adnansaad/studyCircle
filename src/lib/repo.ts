@@ -7,6 +7,7 @@
  * the weekly post budget (post/comment/repost/quote share POST_WEEKLY_CAP). Like
  * and share remain fully gated → upsell (handled in the UI, no state change).
  */
+import { randomUUID } from "node:crypto";
 import { getDb } from "./db";
 import { config } from "./config";
 
@@ -24,7 +25,7 @@ export type ProfileRow = {
 
 export type PostRow = {
   id: string;
-  author_profile_id: string;
+  author_profile_id: string | null; // NULL = authored by the demo session
   body: string;
   image_path: string | null;
   privacy: string;
@@ -32,6 +33,8 @@ export type PostRow = {
   like_count: number;
   comment_count: number;
   repost_count: number;
+  repost_of_post_id: string | null;
+  session_id: string | null; // set = user post (cleared on logout)
   created_at: string;
 };
 
@@ -72,9 +75,10 @@ export function listGroups(): GroupRow[] {
 export type CommentRow = {
   id: string;
   post_id: string;
-  author_profile_id: string;
+  author_profile_id: string | null; // NULL = authored by the demo session
   parent_comment_id: string | null;
   body: string;
+  session_id: string | null;
   created_at: string;
 };
 
@@ -118,6 +122,13 @@ export function listPostsByProfile(profileId: string): PostRow[] {
   return getDb()
     .prepare("SELECT * FROM posts WHERE author_profile_id = ? ORDER BY created_at DESC")
     .all(profileId) as PostRow[];
+}
+
+/** Posts authored by the demo session (newest first) — for the own profile + feed. */
+export function listPostsBySession(sessionId: string): PostRow[] {
+  return getDb()
+    .prepare("SELECT * FROM posts WHERE session_id = ? ORDER BY created_at DESC")
+    .all(sessionId) as PostRow[];
 }
 
 export function listGroupPosts(groupId: string): PostRow[] {
@@ -392,18 +403,84 @@ export function postsUsed(sessionId: string): number {
   return row?.posts_used ?? 0;
 }
 
-export type PostUsageResult = { ok: true; used: number } | { ok: false; reason: "at_cap"; used: number };
+// ── User-authored content (consumes the weekly post budget, persists, clears on
+//    logout via session_id cascade). Author is the demo session: author_profile_id
+//    stays NULL and the view layer renders the session identity.
 
-/** Consumes one weekly post; blocks at the cap (caller routes the block to upsell). */
-export function recordPost(sessionId: string): PostUsageResult {
+export type CreatePostResult =
+  | { ok: true; postId: string; used: number }
+  | { ok: false; reason: "at_cap"; used: number };
+
+/** Create a feed post by the demo session. Body + optional Shikho lesson embed. */
+export function createPost(
+  sessionId: string,
+  input: { body: string; privacy: string; embed?: { lessonId: string | null; title: string; subject: string | null } | null }
+): CreatePostResult {
+  const db = getDb();
+  return db.transaction((): CreatePostResult => {
+    const used = postsUsed(sessionId);
+    if (used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO posts (id, author_profile_id, body, image_path, privacy, group_id,
+        like_count, comment_count, repost_count, repost_of_post_id, session_id, created_at)
+       VALUES (?, NULL, ?, NULL, ?, NULL, 0, 0, 0, NULL, ?, ?)`
+    ).run(id, input.body, input.privacy, sessionId, new Date().toISOString());
+    if (input.embed) {
+      db.prepare(
+        `INSERT INTO post_embeds (id, post_id, lesson_id, lesson_title, subject, thumbnail_path, course_ref)
+         VALUES (?, ?, ?, ?, ?, NULL, NULL)`
+      ).run(randomUUID(), id, input.embed.lessonId, input.embed.title, input.embed.subject);
+    }
+    return { ok: true, postId: id, used: bumpPostUsage(db, sessionId) };
+  })();
+}
+
+/** Repost (or quote) an existing post → a new feed post that references the original. */
+export function createRepost(sessionId: string, originalPostId: string, quoteBody = ""): CreatePostResult {
+  const db = getDb();
+  return db.transaction((): CreatePostResult => {
+    const original = getPost(originalPostId);
+    if (!original) return { ok: false, reason: "at_cap", used: postsUsed(sessionId) }; // missing original: treat as no-op block
+    const used = postsUsed(sessionId);
+    if (used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO posts (id, author_profile_id, body, image_path, privacy, group_id,
+        like_count, comment_count, repost_count, repost_of_post_id, session_id, created_at)
+       VALUES (?, NULL, ?, NULL, 'Public', NULL, 0, 0, 0, ?, ?, ?)`
+    ).run(id, quoteBody, originalPostId, sessionId, new Date().toISOString());
+    db.prepare("UPDATE posts SET repost_count = repost_count + 1 WHERE id = ?").run(originalPostId);
+    return { ok: true, postId: id, used: bumpPostUsage(db, sessionId) };
+  })();
+}
+
+/** Create a comment/reply by the demo session; bumps the post's comment_count. */
+export function createComment(
+  sessionId: string,
+  postId: string,
+  body: string,
+  parentCommentId: string | null = null
+): { ok: true; used: number } | { ok: false; reason: "at_cap"; used: number } {
+  const db = getDb();
+  return db.transaction((): { ok: true; used: number } | { ok: false; reason: "at_cap"; used: number } => {
+    const used = postsUsed(sessionId);
+    if (used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
+    db.prepare(
+      `INSERT INTO comments (id, post_id, author_profile_id, parent_comment_id, body, session_id, created_at)
+       VALUES (?, ?, NULL, ?, ?, ?, ?)`
+    ).run(randomUUID(), postId, parentCommentId, body, sessionId, new Date().toISOString());
+    db.prepare("UPDATE posts SET comment_count = comment_count + 1 WHERE id = ?").run(postId);
+    return { ok: true, used: bumpPostUsage(db, sessionId) };
+  })();
+}
+
+/** Increment the weekly post counter (used inside the create transactions). */
+function bumpPostUsage(db: ReturnType<typeof getDb>, sessionId: string): number {
   const week = currentWeekStart();
-  const used = postsUsed(sessionId);
-  if (used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
-  getDb()
-    .prepare(
-      `INSERT INTO post_usage (session_id, posts_used, week_start) VALUES (?, 1, ?)
-       ON CONFLICT(session_id, week_start) DO UPDATE SET posts_used = posts_used + 1`
-    )
-    .run(sessionId, week);
-  return { ok: true, used: used + 1 };
+  db.prepare(
+    `INSERT INTO post_usage (session_id, posts_used, week_start) VALUES (?, 1, ?)
+     ON CONFLICT(session_id, week_start) DO UPDATE SET posts_used = posts_used + 1`
+  ).run(sessionId, week);
+  return postsUsed(sessionId);
 }

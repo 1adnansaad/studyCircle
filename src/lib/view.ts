@@ -13,6 +13,7 @@ import {
   getEmbed,
   listComments,
   listPostsByProfile,
+  listPostsBySession,
   listGroupPosts,
   listProfileGroups,
   listLessons,
@@ -52,6 +53,8 @@ export type PostCardVM = {
   reposts: string;
   bookmarked: boolean;
   groupId: string | null;
+  isOwn: boolean; // authored by the demo session
+  repostOf: { tag: string; body: string } | null;
 };
 
 export type CommentVM = {
@@ -85,14 +88,27 @@ function groupInitials(name: string): string {
 }
 
 function postToVM(p: PostRow, bookmarks: Set<string>): PostCardVM {
-  const author = getProfile(p.author_profile_id);
+  const isOwn = p.author_profile_id == null; // session-authored
+  const session = isOwn ? getCurrentSession() : null;
+  const author = p.author_profile_id ? getProfile(p.author_profile_id) : null;
   const embed = getEmbed(p.id);
+
+  // A repost references the original; surface a compact quote of it.
+  let repostOf: { tag: string; body: string } | null = null;
+  if (p.repost_of_post_id) {
+    const orig = getPost(p.repost_of_post_id);
+    if (orig) {
+      const oa = orig.author_profile_id ? getProfile(orig.author_profile_id) : null;
+      repostOf = { tag: oa?.user_tag ?? ownTag(session?.name ?? "you"), body: orig.body };
+    }
+  }
+
   return {
     id: p.id,
-    authorProfileId: p.author_profile_id,
-    tag: author?.user_tag ?? "@unknown",
-    klass: classTag(author?.class ?? 0),
-    rank: rankTag(author?.leaderboard_pos ?? null),
+    authorProfileId: isOwn ? "me" : (p.author_profile_id as string),
+    tag: isOwn ? ownTag(session?.name ?? "you") : author?.user_tag ?? "@unknown",
+    klass: classTag(isOwn ? session?.class ?? 0 : author?.class ?? 0),
+    rank: isOwn ? null : rankTag(author?.leaderboard_pos ?? null),
     privacy: p.privacy,
     time: relativeTime(p.created_at),
     body: p.body,
@@ -103,6 +119,8 @@ function postToVM(p: PostRow, bookmarks: Set<string>): PostCardVM {
     reposts: bnCount(p.repost_count),
     bookmarked: bookmarks.has(p.id),
     groupId: p.group_id,
+    isOwn,
+    repostOf,
   };
 }
 
@@ -132,14 +150,16 @@ export function postDetailView(postId: string, sessionId: string) {
   const post = getPost(postId);
   if (!post) return null;
   const bm = new Set(listBookmarks(sessionId));
+  const session = getCurrentSession();
   const comments: CommentVM[] = listComments(postId).map((c) => {
-    const a = getProfile(c.author_profile_id);
+    const isOwn = c.author_profile_id == null; // session-authored
+    const a = c.author_profile_id ? getProfile(c.author_profile_id) : null;
     return {
       id: c.id,
-      tag: a?.user_tag ?? "@unknown",
-      authorProfileId: c.author_profile_id,
-      klass: classTag(a?.class ?? 0),
-      rank: rankTag(a?.leaderboard_pos ?? null),
+      tag: isOwn ? ownTag(session?.name ?? "you") : a?.user_tag ?? "@unknown",
+      authorProfileId: isOwn ? "me" : (c.author_profile_id as string),
+      klass: classTag(isOwn ? session?.class ?? 0 : a?.class ?? 0),
+      rank: isOwn ? null : rankTag(a?.leaderboard_pos ?? null),
       privacy: "Public",
       time: relativeTime(c.created_at),
       body: c.body,
@@ -188,7 +208,7 @@ export function profileView(profileIdOrMe: string, sessionId: string) {
       followers: bnCount(0),
       following: bnCount(followingCount(sessionId)),
       isFollowing: false,
-      posts: [] as PostCardVM[],
+      posts: listPostsBySession(sessionId).map((p) => postToVM(p, bm)),
       groups: listJoinedGroups(sessionId)
         .map((id) => getGroup(id))
         .filter((g): g is GroupRow => !!g)

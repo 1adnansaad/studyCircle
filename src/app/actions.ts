@@ -11,8 +11,9 @@ import {
   toggleFollow,
   recordSearch,
   searchesUsed,
-  postsUsed,
-  recordPost,
+  createPost,
+  createComment,
+  createRepost,
   listSearchCorpus,
   llmTokensUsed,
   addLlmTokens,
@@ -81,23 +82,54 @@ export async function joinGroupAction(groupId: string): Promise<JoinResult> {
   return res;
 }
 
-export type PostResponse =
-  | { status: "ok"; used: number; cap: number }
-  | { status: "at_cap"; used: number; cap: number };
-
 /**
- * Consume one weekly post (spec §1, revised): post / comment / repost / quote
- * all draw from the same POST_WEEKLY_CAP budget. At the cap the write is blocked
- * and the UI routes to the upsell; otherwise it's recorded (monotonic — never
- * refunded). Content itself is not rendered into the seeded feed.
+ * Spec §1 (revised): post / comment / reply / repost / quote are real writes that
+ * persist as user-authored content AND share the weekly POST_WEEKLY_CAP budget
+ * (monotonic — un-reposting never refunds). The content is scoped to the demo
+ * session, so it appears in the feed/threads and is cleared on logout. At the cap
+ * the write is blocked → the UI shows the upsell. Like and share stay gated.
  */
-export async function recordPostAction(): Promise<PostResponse> {
+
+type PostEmbedInput = { lessonId: string | null; title: string; subject: string | null } | null;
+
+export type CreatePostResponse =
+  | { status: "ok"; postId: string }
+  | { status: "at_cap" }
+  | { status: "empty" };
+
+export async function createPostAction(input: {
+  body: string;
+  privacy: string;
+  embed?: PostEmbedInput;
+}): Promise<CreatePostResponse> {
   const sid = requireSession();
-  const cap = publicCaps.postWeeklyCap;
-  if (postsUsed(sid) >= cap) return { status: "at_cap", used: postsUsed(sid), cap };
-  const res = recordPost(sid);
+  const body = input.body.trim();
+  if (!body && !input.embed) return { status: "empty" };
+  const res = createPost(sid, { body, privacy: input.privacy, embed: input.embed ?? null });
+  if (!res.ok) return { status: "at_cap" };
   refresh();
-  return { status: "ok", used: res.used, cap };
+  return { status: "ok", postId: res.postId };
+}
+
+export type WriteResponse = { status: "ok" } | { status: "at_cap" } | { status: "empty" };
+
+export async function createCommentAction(postId: string, body: string): Promise<WriteResponse> {
+  const sid = requireSession();
+  const text = body.trim();
+  if (!text) return { status: "empty" };
+  const res = createComment(sid, postId, text);
+  if (!res.ok) return { status: "at_cap" };
+  refresh();
+  return { status: "ok" };
+}
+
+/** Repost (`quote=false`) or quote (`quote=true`) a post → a new referencing feed post. */
+export async function repostAction(postId: string): Promise<{ status: "ok"; postId: string } | { status: "at_cap" }> {
+  const sid = requireSession();
+  const res = createRepost(sid, postId);
+  if (!res.ok) return { status: "at_cap" };
+  refresh();
+  return { status: "ok", postId: res.postId };
 }
 
 export type SearchResponse =

@@ -26,20 +26,23 @@ A working demo of **StudyCircle**, a social feature inside the existing **Shikho
 
 ## 1. Governing interaction model (freemium)
 
-One rule: **affordances visible, reads free, writes gated — except the four metered/allowed writes below.**
+One rule: **affordances visible, reads free, writes gated — except the metered/allowed writes below.**
 
 | Bucket | Actions | Behavior |
 |---|---|---|
 | **Reads — always free** | Browse feed, Groups, search results, post detail/threads, profiles | Work normally |
 | **Allowed writes** (work + persist) | **Bookmark** (≤`BOOKMARK_CAP`, default 5) · **Join group** (≤`JOIN_GROUP_CAP`, default 2, no leaving) · **Search** (≤`SEARCH_WEEKLY_CAP`/week, default 7) · **Follow / Unfollow** (uncapped) | Execute, persist, show quota where capped; block at cap |
-| **Gated writes** (button visible; tap → subscribe/upsell) | **Comment, Reply, Like, Repost, Quote, Share,** and the terminal **Post** in the composer | Show upsell; no state change |
+| **Metered writes** (work + persist, one shared weekly budget) | **Post · Comment · Reply · Repost · Quote** — all draw from `POST_WEEKLY_CAP`/week (default 5) | Persist as user-authored content (appears in feed/threads, interactable, cleared on logout); **monotonic** — un-reposting/un-quoting never refunds; block at cap → upsell |
+| **Gated writes** (button visible; tap → subscribe/upsell) | **Like, Share** | Show upsell; no state change |
 | **Real bridge** | Tap a **Shikho embed** | Opens lesson preview / routes toward the course |
 
-**Change from the design spec:** Follow has moved from *gated* to *allowed* — it now persists and drives follower counts (§2, §3). All other gated writes are unchanged.
+**Change from the design spec:** Follow has moved from *gated* to *allowed* — it now persists and drives follower counts (§2, §3).
+
+**Change (user, 2026-06-19):** Post / Comment / Reply / Repost / Quote moved from *gated* to a **metered** write sharing one weekly budget `POST_WEEKLY_CAP`. User-authored posts join the same `posts` table (author_profile_id NULL, `session_id` set), appear in the feed, and are fully interactable; comments persist in threads; reposts/quotes create a referencing feed post. All of it is mutable-layer state (cleared on logout via cascade). Only **Like** and **Share** remain fully gated.
 
 The gate prompt doubles as the subscribe funnel → points at the paid **C9–C12 courses**. One reusable Upsell component for every gated write.
 
-No separate "save" action — **bookmark is the save**, and it's allowed. The composer is fully clickable (text, privacy chip, embed picker); only the terminal **Post** is gated.
+No separate "save" action — **bookmark is the save**, and it's allowed. The composer is fully clickable (text, privacy chip, embed picker); **Post** publishes a real post (consuming the weekly post budget) until the cap, then upsells. The composer shows the weekly post meter like the other capped surfaces.
 
 ---
 
@@ -87,11 +90,11 @@ So: **persist on exit, reset on logout.**
 - **S2 Home** — Replica of the current home (screenshot), unchanged except the nav (§4). Toggle → S3; Search → S8; any other home control → dead-end.
 - **S3 StudyCircle · Feed** — Top bar (avatar/menu → Sidebar) + tabs **Feed | Groups** + compose entry → S9. Scrolling PostCards, some with a Shikho embed. **Feed renders seeded posts regardless of follow state** — never an empty "follow someone" wall. Card body → S5; name-card → S6. Tab → S4.
 - **S4 StudyCircle · Groups** — GroupCards (subject, active-user count, posts/day). New user → suggested groups; own joined list "Groups empty" until joined. Not-joined → join-confirm → joined / at-cap block. Joined → S7.
-- **S5 Post detail / thread** — Original PostCard pinned + comment thread (each comment uses NameCard). Reply input visible. Reading free; Reply/Like/Repost/Quote/Share → upsell. Bookmark metered. Embeds → S10. Name-card → S6.
+- **S5 Post detail / thread** — Original PostCard pinned + comment thread (each comment uses NameCard). Reply input visible and **works** — a reply persists in the thread and consumes the weekly post budget (block at cap → upsell). Reading free; Repost/Quote also metered; Like/Share → upsell. Bookmark metered. Embeds → S10. Name-card → S6.
 - **S6 Profile (any user, incl. own)** — Header = NameCard + **follower count** and **following count**. **Follow/Following button works and persists** (§3). Sections: Posts, Groups. Own profile uses captured Name/Class. Post → S5; group → join/enter rules.
 - **S7 Group view** — Title becomes group name + back button. Header: name, description, privacy (seed). Member PostCards behave like feed. Back → S4.
 - **S8 Explore (Search)** — Entering flips toggle → "Home". NL search field with live **"{n} / 120"** counter; weekly-search meter ("{n} of {SEARCH_WEEKLY_CAP}"); subscribe ad for trending; default state shows trending posts. Submit decrements meter (block at cap) and calls the LLM (§9). Results = standard PostCards. Result → S5.
-- **S9 Composer** — Fully clickable; only Post is gated. Author preview (own Name/Class), text field, optional image attach, privacy selector/chip (display-only seed), **"Embed from Shikho" picker** attaching a ShikhoEmbed preview. Post → upsell (→ C9–C12 courses).
+- **S9 Composer** — Fully clickable. Author preview (own Name/Class), text field, optional image attach, privacy selector/chip (display-only seed), **"Embed from Shikho" picker** attaching a ShikhoEmbed preview, and the **weekly post meter** (`used / POST_WEEKLY_CAP`). Post **publishes a real post** (own-authored, appears at the top of the Feed and on the own profile) and consumes the weekly budget; at the cap → upsell (→ C9–C12 courses).
 - **S10 Lesson preview (the bridge)** — Reached from any embed. Thumbnail, lesson title, CTA **শুরু করো / ৩ দিন ফ্রি**, routes toward the course. Make it feel real, not a dead-end.
 - **Sidebar (drawer)** — Profile (own, S6) · My Bookmarks (the set; empty = "Bookmarks empty"; remove flow lands here) · Settings (dead-end).
 
@@ -101,7 +104,7 @@ So: **persist on exit, reset on logout.**
 
 ## 6. Components
 
-- **PostCard** — NameCard header; text; optional image; optional ShikhoEmbed; actions **Comment · Repost · Quote · Share · Bookmark** (bookmark allowed/metered, rest gated). Reused in feed, Groups, results, profile.
+- **PostCard** — NameCard header; text; optional image; optional ShikhoEmbed; optional reposted-original reference; actions **Comment · Like · Repost · Quote · Share · Bookmark**. Comment → opens the thread (reply there); Repost/Quote persist (metered); Bookmark allowed/metered; Like/Share gated. Reused in feed, Groups, results, profile.
 - **NameCard** — no profile photo; user tag (→ S6), class tag, leaderboard tag (seed), privacy tag (seed).
 - **ShikhoEmbed** — deep-indigo thumbnail, lesson title, CTA শুরু করো / ৩ দিন ফ্রি; tap → S10. In feed, Groups, results, composer preview.
 - **GroupCard** — subject, active-user count, posts/day; state-aware (not-joined → join flow; joined → S7).
@@ -117,10 +120,12 @@ So: **persist on exit, reset on logout.**
 
 **Seeded "world" tables (never cleared on logout):**
 - `profiles` (id, user_tag, class, leaderboard_pos, follower_count_seed)
-- `posts` (id, author_profile_id, body, image_path nullable, privacy, group_id nullable [null = main feed], created_at)
+- `posts` (id, author_profile_id **nullable** [null = authored by the demo session], body, image_path nullable, privacy, group_id nullable [null = main feed], like/comment/repost counts, `repost_of_post_id` nullable, `session_id` nullable [set = user post, ON DELETE CASCADE], created_at)
 - `post_embeds` (id, post_id, lesson_title, thumbnail_path, course_ref)
-- `comments` (id, post_id, author_profile_id, parent_comment_id nullable, body, created_at)
+- `comments` (id, post_id, author_profile_id **nullable**, parent_comment_id nullable, body, `session_id` nullable [ON DELETE CASCADE], created_at)
 - `groups` (id, name, description, privacy, active_users, posts_per_day)
+
+> Posts/comments are *world* tables, but a row with `session_id` set is **user-authored mutable state**: the FK cascade deletes it on logout, so the seeded world is byte-identical before/after a session.
 
 **Mutable "user layer" tables (cleared on logout):**
 - `session` (id, name, class, created_at)
@@ -128,8 +133,10 @@ So: **persist on exit, reset on logout.**
 - `joined_groups` (session_id, group_id) — enforce ≤`JOIN_GROUP_CAP` server-side
 - `follows` (session_id, profile_id) — uncapped
 - `search_usage` (session_id, searches_used, week_start) — enforce ≤`SEARCH_WEEKLY_CAP`/week
+- `post_usage` (session_id, posts_used, week_start) — enforce ≤`POST_WEEKLY_CAP`/week (shared by post/comment/reply/repost/quote)
+- *user-authored* `posts`/`comments` rows (via `session_id`, above)
 
-Logout = delete the session's rows across the mutable tables (and the session row). Follower counts and "following" counts are **derived**, never stored mutably.
+Logout = delete the session row; ON DELETE CASCADE clears every mutable table **and** the user-authored posts/comments. Follower counts and "following" counts are **derived**, never stored mutably.
 
 ---
 

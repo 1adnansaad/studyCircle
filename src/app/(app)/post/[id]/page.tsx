@@ -29,7 +29,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
           <CommentCard key={c.id} comment={c} />
         ))}
       </ScrollBody>
-      <ReplyBar />
+      <ReplyBar postId={id} />
     </Screen>
   );
 }

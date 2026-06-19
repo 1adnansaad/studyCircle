@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import type { PostCardVM, GroupCardVM } from "@/lib/view";
 import { useApp } from "./app-shell";
 import { PostCard } from "./post-card";
 import { SparkleIcon, ImageIcon, InfoIcon, PlayIcon } from "./icons";
+import { createPostAction, createCommentAction } from "@/app/actions";
 
 // ── Generic dead/out-of-scope button ─────────────────────────────────────────
 export function DeadButton({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -88,13 +89,37 @@ export function Empty({ title, body }: { title: string; body: string }) {
 }
 
 // ── Gated reply bar (post detail) ─────────────────────────────────────────────
-export function ReplyBar() {
-  const { submitPost } = useApp();
-  // Replies count as posts — they draw from the same weekly budget (→ upsell at cap).
+/** Reply composer — a real comment that persists in the thread and counts as a post. */
+export function ReplyBar({ postId }: { postId: string }) {
+  const { postCapUpsell, toast } = useApp();
+  const router = useRouter();
+  const [text, setText] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function send() {
+    const body = text.trim();
+    if (!body || pending) return;
+    startTransition(async () => {
+      const res = await createCommentAction(postId, body);
+      if (res.status === "at_cap") postCapUpsell();
+      else if (res.status === "ok") {
+        setText("");
+        toast("Reply posted.");
+      }
+      router.refresh();
+    });
+  }
+
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--ll-surface-container-lowest)", boxShadow: "0 -2px 16px rgba(25,28,30,.06)", flex: "none" }}>
-      <button onClick={() => submitPost("Reply added")} style={{ flex: 1, textAlign: "left", border: "none", background: "var(--ll-surface-container-low)", color: "var(--ll-on-surface-variant)", borderRadius: 999, padding: "12px 16px", fontSize: 14, cursor: "pointer" }}>Write a reply…</button>
-      <button onClick={() => submitPost("Reply added")} style={{ border: "none", background: "var(--ll-secondary)", color: "#fff", borderRadius: 999, padding: "10px 18px", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Reply</button>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+        placeholder="Write a reply…"
+        style={{ flex: 1, border: "none", outline: "none", background: "var(--ll-surface-container-low)", color: "var(--ll-on-surface)", borderRadius: 999, padding: "12px 16px", fontSize: 14, fontFamily: "var(--ll-font-latin)" }}
+      />
+      <button onClick={send} disabled={!text.trim() || pending} style={{ border: "none", background: "var(--ll-secondary)", color: "#fff", borderRadius: 999, padding: "10px 18px", fontWeight: 600, fontSize: 14, cursor: text.trim() ? "pointer" : "default", opacity: text.trim() ? 1 : 0.55 }}>Reply</button>
     </div>
   );
 }
@@ -114,11 +139,26 @@ export function GroupComposeButton() {
 // ── Composer (S9) ─────────────────────────────────────────────────────────────
 const PRIVACY = ["Public", "Followers", "Only me"] as const;
 export function Composer({ authorTag, classTag, lessons, used, cap }: { authorTag: string; classTag: string; lessons: { id: string; title: string; subject: string | null; klass: string | null; duration: string | null }[]; used: number; cap: number }) {
-  const { submitPost, deadEnd } = useApp();
+  const { postCapUpsell, deadEnd, toast } = useApp();
+  const router = useRouter();
   const [text, setText] = useState("");
   const [privacy, setPrivacy] = useState<(typeof PRIVACY)[number]>("Public");
-  const [embed, setEmbed] = useState<{ title: string; subject: string | null } | null>(null);
+  const [embed, setEmbed] = useState<{ lessonId: string | null; title: string; subject: string | null } | null>(null);
   const [picker, setPicker] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function post() {
+    if (pending) return;
+    if (!text.trim() && !embed) return;
+    startTransition(async () => {
+      const res = await createPostAction({ body: text, privacy, embed });
+      if (res.status === "at_cap") postCapUpsell();
+      else if (res.status === "ok") {
+        toast("Posted to your feed.");
+        router.push("/studycircle");
+      }
+    });
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
@@ -154,7 +194,7 @@ export function Composer({ authorTag, classTag, lessons, used, cap }: { authorTa
         <button onClick={() => setPicker(true)} style={toolBtn} aria-label="Embed from Shikho"><PlayIcon size={20} stroke="var(--ll-primary)" /></button>
         <button onClick={deadEnd} style={toolBtn} aria-label="Attach image"><ImageIcon size={20} /></button>
         <div style={{ flex: 1 }} />
-        <button onClick={() => submitPost("Posted")} style={{ border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 14, padding: "10px 22px", borderRadius: 999, boxShadow: "var(--ll-shadow-cta)" }}>Post</button>
+        <button onClick={post} disabled={pending || (!text.trim() && !embed)} style={{ border: "none", cursor: text.trim() || embed ? "pointer" : "default", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 14, padding: "10px 22px", borderRadius: 999, boxShadow: "var(--ll-shadow-cta)", opacity: pending || (!text.trim() && !embed) ? 0.6 : 1 }}>{pending ? "Posting…" : "Post"}</button>
       </div>
 
       {picker && (
@@ -164,7 +204,7 @@ export function Composer({ authorTag, classTag, lessons, used, cap }: { authorTa
             <h3 style={{ margin: "0 0 12px", fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 18 }}>Embed from Shikho</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {lessons.map((l) => (
-                <button key={l.id} onClick={() => { setEmbed({ title: l.title, subject: l.subject }); setPicker(false); }} style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", border: "none", cursor: "pointer", background: "var(--ll-surface-container-low)", borderRadius: 12, padding: "10px 12px" }}>
+                <button key={l.id} onClick={() => { setEmbed({ lessonId: l.id, title: l.title, subject: l.subject }); setPicker(false); }} style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", border: "none", cursor: "pointer", background: "var(--ll-surface-container-low)", borderRadius: 12, padding: "10px 12px" }}>
                   <span style={{ width: 40, height: 40, borderRadius: 10, background: "var(--ll-gradient-deep)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><PlayIcon size={18} /></span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ll-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.title}</div>

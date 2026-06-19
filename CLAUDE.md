@@ -60,11 +60,24 @@ This build follows the **build spec**:
   Repost, Quote** all draw from one shared weekly budget `POST_WEEKLY_CAP` (5).
   Each consumes one; **monotonic** — un-reposting/un-quoting never refunds. At the
   cap they route to the upsell. The composer shows the meter (`used / cap`) like
-  bookmarks/search/groups. Backed by mutable `post_usage` (cleared on logout),
-  `recordPost`/`postsUsed` in `repo.ts`, `recordPostAction` in `actions.ts`,
-  `submitPost(label)` in the app-shell context. **Posted content is NOT rendered
-  into the seeded feed** — only the budget + gating are modeled (like Search).
+  bookmarks/search/groups.
+  - **Content is REAL.** User-authored posts live in the **same `posts` table**
+    (`author_profile_id` NULL + `session_id` set), so they appear at the top of
+    the Feed and on `/profile/me`, fully interactable. Comments persist in the
+    thread; repost/quote create a referencing feed post (`repost_of_post_id`).
+    All cleared on logout via the `session_id` FK cascade — the seeded world is
+    byte-identical before/after a session.
+  - Backed by: mutable `post_usage` + nullable-author `posts`/`comments` with
+    `session_id` (`schema.ts`; idempotent rebuild migration in `db.ts`
+    `migrateUserAuthoredContent`). Repo: `createPost` / `createComment` /
+    `createRepost` / `listPostsBySession` / `postsUsed` (budget enforced inside
+    the create txn via `bumpPostUsage`). Actions: `createPostAction` /
+    `createCommentAction` / `repostAction`. UI: composer (`screen-widgets.tsx`),
+    real `ReplyBar`, post-card repost/quote; `postCapUpsell()` in app-shell
+    centralizes the at-cap upsell. `postToVM` renders the session identity for
+    NULL-author rows.
 - **Still fully gated → upsell, no state change (§1):** **Like** and **Share**.
+  (Group-composer "Post in group" is also still gated — not yet metered.)
 - **Allowed writes** (work + persist): **Bookmark** (≤cap), **Join group** (≤cap, no
   leaving), **Search** (≤cap/week), **Follow/Unfollow** (uncapped), **post budget**
   (≤cap/week, above).

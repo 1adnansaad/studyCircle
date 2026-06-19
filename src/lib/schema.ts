@@ -50,14 +50,18 @@ CREATE TABLE IF NOT EXISTS lessons (
 
 CREATE TABLE IF NOT EXISTS posts (
   id                TEXT PRIMARY KEY,
-  author_profile_id TEXT NOT NULL REFERENCES profiles(id),
+  author_profile_id TEXT REFERENCES profiles(id),  -- NULL = authored by the demo session (see session_id)
   body              TEXT NOT NULL,
   image_path        TEXT,
   privacy           TEXT NOT NULL DEFAULT 'Public',
-  group_id          TEXT REFERENCES groups(id),   -- NULL = main feed
+  group_id          TEXT REFERENCES groups(id),    -- NULL = main feed
   like_count        INTEGER NOT NULL DEFAULT 0,
   comment_count     INTEGER NOT NULL DEFAULT 0,
   repost_count      INTEGER NOT NULL DEFAULT 0,
+  repost_of_post_id TEXT REFERENCES posts(id),     -- set when this post reposts/quotes another
+  -- User-authored posts are scoped to the demo session and cleared on logout
+  -- (ON DELETE CASCADE). Seeded posts have session_id NULL → they never clear.
+  session_id        TEXT REFERENCES session(id) ON DELETE CASCADE,
   created_at        TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_posts_group ON posts(group_id);
@@ -77,9 +81,11 @@ CREATE INDEX IF NOT EXISTS idx_embeds_post ON post_embeds(post_id);
 CREATE TABLE IF NOT EXISTS comments (
   id                TEXT PRIMARY KEY,
   post_id           TEXT NOT NULL REFERENCES posts(id),
-  author_profile_id TEXT NOT NULL REFERENCES profiles(id),
+  author_profile_id TEXT REFERENCES profiles(id),  -- NULL = authored by the demo session
   parent_comment_id TEXT REFERENCES comments(id),
   body              TEXT NOT NULL,
+  -- User-authored comments are cleared on logout (ON DELETE CASCADE).
+  session_id        TEXT REFERENCES session(id) ON DELETE CASCADE,
   created_at        TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id);

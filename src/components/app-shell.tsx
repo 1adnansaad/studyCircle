@@ -16,7 +16,6 @@ import {
   logoutAction,
   joinGroupAction,
   removeBookmarkAction,
-  recordPostAction,
 } from "@/app/actions";
 import {
   SearchIcon,
@@ -65,8 +64,8 @@ type Ctx = {
   joinConfirm: (g: ShellGroup) => void;
   bookmarkAtCap: () => void;
   chipInfo: (o: { title: string; body: string; showCta?: boolean }) => void;
-  /** Metered write (post/comment/repost/quote): consume one weekly post → toast, or upsell at cap. */
-  submitPost: (label: string) => void;
+  /** Standard upsell when a post/comment/repost/quote hits the weekly POST_WEEKLY_CAP. */
+  postCapUpsell: () => void;
 };
 
 const AppCtx = createContext<Ctx | null>(null);
@@ -114,7 +113,12 @@ export function AppShell({
     joinConfirm: (group) => setModal({ kind: "joinconfirm", group }),
     bookmarkAtCap: () => setModal({ kind: "bookmarkcap" }),
     chipInfo: (o) => setModal({ kind: "chipinfo", ...o }),
-    submitPost: (label) => submitPost(label),
+    postCapUpsell: () =>
+      setModal({
+        kind: "upsell",
+        title: `You've used all ${caps.postWeeklyCap} of your weekly posts`,
+        body: `On the free trial, posts, comments, reposts, and quotes share a budget of ${caps.postWeeklyCap} a week. Subscribe to post without limits — and unlock your ${courseLine} courses.`,
+      }),
   };
 
   const [sidebar, setSidebar] = useState(false);
@@ -156,21 +160,6 @@ export function AppShell({
   function removeBm(postId: string) {
     startTransition(async () => {
       await removeBookmarkAction(postId);
-      router.refresh();
-    });
-  }
-
-  // Metered write: post / comment / repost / quote all draw from POST_WEEKLY_CAP.
-  function submitPost(label: string) {
-    startTransition(async () => {
-      const res = await recordPostAction();
-      if (res.status === "at_cap")
-        setModal({
-          kind: "upsell",
-          title: `You've used all ${res.cap} of your weekly posts`,
-          body: `On the free trial, posts, comments, reposts, and quotes share a budget of ${res.cap} a week. Subscribe to post without limits — and unlock your ${courseLine} courses.`,
-        });
-      else toast(`${label}. ${res.used} of ${res.cap} weekly posts used.`);
       router.refresh();
     });
   }
