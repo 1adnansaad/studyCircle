@@ -9,8 +9,10 @@
    never hardcode a hex anywhere else.
    ========================================================================== */
 
-/* Webfonts — Baloo Da 2 (headlines + ALL Bengali) · Be Vietnam Pro (Latin) */
-@import url('https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap');
+/* Webfonts are loaded at runtime by the root layout (src/app/layout.tsx) from the
+   FONT_DISPLAY / FONT_BODY / FONT_BENGALI env vars (defaults: Baloo Da 2 for
+   headlines + ALL Bengali, Be Vietnam Pro for Latin). The --ll-font-* values
+   below are the in-CSS fallbacks; the layout overrides them inline on <html>. */
 
 :root {
   /* ── Font families ───────────────────────────────────────────────────── */

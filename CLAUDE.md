@@ -36,6 +36,14 @@ see "Conflicts resolved" below.
 - **Design tokens centralized** in `src/styles/tokens.css` (single `--ll-*` source,
   imported once via `globals.css`). Tweak colors/type/spacing there → hot-reloads.
   Components reference vars only; never hardcode a hex.
+  - **Fonts are env-selectable** (`FONT_DISPLAY`/`FONT_BODY`/`FONT_BENGALI`). Each
+    value is a **Google Fonts family** ("Poppins", "Poppins:wght@400;700") OR a
+    **local file** under `public/` ("/fonts/MyFont.ttf"). The static `@import` in
+    tokens.css was removed — `src/lib/fonts.ts` classifies each value and emits the
+    Google `<link>` URL, any `@font-face` rules, and the token overrides; the root
+    `layout.tsx` injects `<link>`/`<style>` and sets `--ll-font-*` inline on
+    `<html>`. tokens.css `--ll-font-*` values are just fallbacks now. Local fonts
+    live in `public/fonts/`.
 - **Docker-ready** (all persistent state under `./data`, env-only config, Node
   pinned via `engines` + `.nvmrc`) but **`npm run dev` is the path for now** — no
   Docker required yet.

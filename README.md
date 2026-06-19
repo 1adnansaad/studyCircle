@@ -158,6 +158,9 @@ on-screen meters, and the copy together** — change one and the UI text follows
 |---|---|---|---|
 | `PORT` | `3000` | integer | Port for `dev` / `start`. |
 | `ASPECT_RATIO` | `device` | `device` \| `W:H` | App-frame shape. `device` = full-bleed (fills the viewport). `W:H` (e.g. `9:16`, `3:4`) locks the frame to that ratio, centered with a letterbox. Invalid values fall back to `device`. |
+| `FONT_DISPLAY` | `Baloo Da 2` | Google family **or** local file | Headline + Bengali font. Google name (`Poppins`, `Poppins:wght@400;700`) or a local file under `public/` (`/fonts/MyFont.ttf`). |
+| `FONT_BODY` | `Be Vietnam Pro` | Google family **or** local file | Body / Latin-text font. |
+| `FONT_BENGALI` | _(= `FONT_DISPLAY`)_ | Google family **or** local file | Optional separate Bengali font — keep it Bengali-capable (e.g. `Hind Siliguri`). |
 | `DB_PATH` | `./data/app.db` | filesystem path | Where the live SQLite database is stored. |
 | `SEED_DB_PATH` | `./data/enhanced-seed.db` | path to a `.db` file | Template SQLite DB used as the **default data on first run**. Ships pointing at the large enhanced dataset (rebuild via `npm run db:build-seed`). See [Default data & seeding](#default-data--seeding). Blank → seed from the small `src/data/seed.json`. |
 | `LLM_PROVIDER` | `gemini` | `gemini` \| `anthropic` | Which provider powers Explore AI search (server-side only). |
@@ -376,6 +379,54 @@ All colors, typography, spacing, radius, and elevation live in **one file**:
 Edit a value, save, and it hot-reloads everywhere — components reference the tokens
 and never hardcode a hex. This mirrors the `DESIGN.md` "Luminous Learning" system
 (pink-lead hero, indigo-deep surfaces, Baloo Da 2 + Be Vietnam Pro).
+
+### Fonts (env-selectable)
+
+Pick the typefaces with env vars — no code edits. Each value is **either a Google
+Fonts family or a local font file**, applied at runtime; they override the
+`--ll-font-*` tokens everywhere.
+
+| Var | Controls | Default |
+|---|---|---|
+| `FONT_DISPLAY` | headlines + Bengali | `Baloo Da 2` |
+| `FONT_BODY` | body / Latin text | `Be Vietnam Pro` |
+| `FONT_BENGALI` | Bengali only (optional) | falls back to `FONT_DISPLAY` |
+
+**Google Fonts** — give a family name (these are fetched from Google, *not* system
+fonts):
+
+```bash
+# .env — restart `npm run dev` after changing (env is read at boot)
+FONT_DISPLAY=Poppins
+FONT_BODY=Inter
+FONT_BENGALI=Hind Siliguri   # keep a Bengali-capable face for Bangla text
+```
+
+A **bare name** (`Poppins`) requests a standard weight set (`400;500;600;700;800`);
+pass a **full spec** (`Poppins:wght@300;700`) for exact weights. Spaces are fine
+(`FONT_DISPLAY=Baloo Da 2`).
+
+**Local font file** — drop a `.ttf`/`.otf`/`.woff`/`.woff2` into
+[`public/fonts/`](public/fonts/) and point the var at its public path (Next serves
+`public/` at the site root):
+
+```bash
+FONT_DISPLAY=/fonts/MyHeadline.ttf
+FONT_BODY=Inter                      # mixing local + Google is fine
+```
+
+The family name is derived from the filename and bold weights are **synthesized**,
+so a single regular file works; use a **variable** font for true multi-weight. You
+can mix and match per slot.
+
+Notes:
+- If a chosen font lacks a glyph or fails to load, text falls back to
+  `Hind Siliguri` (Bengali) / `system-ui`, so nothing disappears.
+- Mechanism: [`src/lib/fonts.ts`](src/lib/fonts.ts) classifies each value (Google
+  family vs local file) and builds the Google `<link>` URL, any `@font-face`
+  rules, and the token overrides; the root [`layout.tsx`](src/app/layout.tsx)
+  injects the `<link>` / `<style>` and sets the `--ll-font-*` vars inline on
+  `<html>`.
 
 ---
 

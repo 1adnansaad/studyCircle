@@ -26,6 +26,12 @@ export const config = {
   // App-frame aspect ratio: "device" (default, full-bleed) or "W:H" (e.g. "9:16").
   aspectRatio: parseAspect(process.env.ASPECT_RATIO),
 
+  // Webfonts (loaded from Google Fonts at runtime; override the --ll-font-* tokens).
+  // A bare family name ("Poppins") or a full spec ("Poppins:wght@400;700").
+  fontDisplay: process.env.FONT_DISPLAY?.trim() || "Baloo Da 2",     // headings + Bengali
+  fontBody: process.env.FONT_BODY?.trim() || "Be Vietnam Pro",       // body / Latin text
+  fontBengali: process.env.FONT_BENGALI?.trim() || "",               // blank → uses fontDisplay
+
   // When on, AI search / trending return a step-by-step debug log that the
   // Explore UI shows in a popup (so you can see why an AI call failed). Off by
   // default. Never includes secrets — only "key present/missing", model, status.
