@@ -14,13 +14,13 @@ export default function LoginPage() {
   const aspect = config.aspectRatio;
   return (
     <main style={{ ...shell, ...(aspect ? { background: "#0c0e12", alignItems: "center" } : null) }}>
-      <div style={{ ...frame, ...frameSize(aspect) }}>
+      <div style={{ ...frame, ...frameSize(aspect), overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 4 }}>
           <div style={{ width: 38, height: 38, borderRadius: 11, background: "var(--ll-gradient-deep)" }} />
           <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 800, fontSize: 20, color: "var(--ll-primary)" }}>Shikho</span>
         </div>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 18 }}>
+        <div style={{ margin: "auto 0", display: "flex", flexDirection: "column", gap: 18 }}>
           <div style={card}>
             <span style={pill}>New · StudyCircle</span>
             <h1 style={{ margin: "14px 0 8px", fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 27, lineHeight: 1.2, color: "var(--ll-on-surface)" }}>Welcome 👋</h1>

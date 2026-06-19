@@ -15,7 +15,7 @@ export default function HomePage() {
 
   return (
     <Screen>
-      <ScrollBody style={{ display: "flex", flexDirection: "column" }}>
+      <ScrollBody>
       <div style={{ background: "var(--ll-wash-lavender)" }}>
         <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 6px", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

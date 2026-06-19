@@ -12,7 +12,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:reset": "node scripts/db-reset.mjs",
-    "db:template": "node scripts/db-template.mjs"
+    "db:template": "node scripts/db-template.mjs",
+    "db:build-seed": "node scripts/build-enhanced-seed.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",

@@ -128,6 +128,14 @@ Explore search, bottom-sheet modals.
   both apply `frameSize(aspect)` to the `frame` style. Inner cards keep their
   rounding. (This replaces the old rolled-back `DISPLAY_MODE`/`ASPECT_RATIO_*`
   experiment — a single clean `ASPECT_RATIO` env now.)
+- **Scrolling (don't regress):** the bounded `frame` (`overflow:hidden`,
+  `position:relative`) holds a **`position:absolute; inset:0`** scroll layer in
+  `app-shell.tsx` — a DEFINITE height so the inner `ScrollBody` (`overflow-y:auto`)
+  scrolls on mobile Safari too. Do NOT swap that back to a `flex:1`/`min-height:0`
+  chain (nested-flex + overflow fails to scroll on iOS). The login `page.tsx` frame
+  is itself the scroll container (`overflowY:auto`) with the card group centered via
+  `margin:auto 0` — centers when it fits, scrolls when it doesn't (so the Continue
+  button is always reachable on short screens).
 - **Motion** lives in `globals.css`: fades + pushes only (`sc-anim-*`), a press
   scale on `button`/`a`, all under `prefers-reduced-motion`.
 - **Page-switch loading bar** — a gradient `.sc-progress` element keyed by
@@ -164,10 +172,18 @@ mutable user layer is cleared so the session starts fresh. Empty/invalid → fal
 back to `src/data/seed.json`. It only acts on first run — once `app.db` exists it
 is never re-copied. `meta.seeded_from` records `template` vs `seed.json`.
 
+- **Committed default (user 2026-06-19):** `SEED_DB_PATH=./data/enhanced-seed.db`
+  in `.env`/`.env.example`. That template is the **large "enhanced" world** (110
+  profiles, 20 groups, 234 posts incl. reposts, 551 comments, 66 corpus rows, 480
+  memberships). Source of truth = `src/data/enhanced-seed.sql`; rebuild the `.db`
+  with `npm run db:build-seed` (`scripts/build-enhanced-seed.mjs`: extracts
+  SCHEMA_SQL from `schema.ts`, folds in `seed.json` lessons since the SQL omits
+  them, then execs the SQL → single self-contained file). So **every `db:reset` +
+  `dev` reseeds from the enhanced world.** Blank `SEED_DB_PATH` → tiny `seed.json`.
 - Make a clean template from a running DB: `npm run db:template -- ./data/seed-template.db`
   (online backup → strips the mutable layer → checkpoints WAL → single file).
 - Switch default data: set `SEED_DB_PATH`, then `npm run db:reset` + `npm run dev`.
-- A committed `/data/seed-template.db` is NOT gitignored — default data can ship
+- A committed `/data/*.db` template is NOT gitignored — default data can ship
   with the repo (its `-wal`/`-shm` sidecars are ignored). Implemented in
   `src/lib/db.ts` (`maybeCopyTemplate`), `scripts/db-template.mjs`.
 

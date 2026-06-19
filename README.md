@@ -157,8 +157,9 @@ on-screen meters, and the copy together** — change one and the UI text follows
 | Variable | Default | Accepted values | What it does |
 |---|---|---|---|
 | `PORT` | `3000` | integer | Port for `dev` / `start`. |
+| `ASPECT_RATIO` | `device` | `device` \| `W:H` | App-frame shape. `device` = full-bleed (fills the viewport). `W:H` (e.g. `9:16`, `3:4`) locks the frame to that ratio, centered with a letterbox. Invalid values fall back to `device`. |
 | `DB_PATH` | `./data/app.db` | filesystem path | Where the live SQLite database is stored. |
-| `SEED_DB_PATH` | _(unset)_ | path to a `.db` file | Template SQLite DB used as the **default data on first run**. See [Default data & seeding](#default-data--seeding). Unset → seed from `src/data/seed.json`. |
+| `SEED_DB_PATH` | `./data/enhanced-seed.db` | path to a `.db` file | Template SQLite DB used as the **default data on first run**. Ships pointing at the large enhanced dataset (rebuild via `npm run db:build-seed`). See [Default data & seeding](#default-data--seeding). Blank → seed from the small `src/data/seed.json`. |
 | `LLM_PROVIDER` | `gemini` | `gemini` \| `anthropic` | Which provider powers Explore AI search (server-side only). |
 | `GEMINI_API_KEY` | _(empty)_ | string | API key, used when `LLM_PROVIDER=gemini`. Empty → keyword fallback. |
 | `ANTHROPIC_API_KEY` | _(empty)_ | string | API key, used when `LLM_PROVIDER=anthropic`. Empty → keyword fallback. |
@@ -190,13 +191,68 @@ search corpus). There are two sources, in priority order:
 
 1. **Seed template DB** — if `SEED_DB_PATH` points to a valid SQLite file, its
    contents are copied in as the starting database, and the mutable user layer is
-   started clean. This is how you **select different default data**.
-2. **`src/data/seed.json`** — the committed default seed (real Bengali content),
-   used when no template is configured.
+   started clean. **This is the default path** — the repo ships with
+   `SEED_DB_PATH=./data/enhanced-seed.db`, the large **enhanced** dataset (110
+   profiles, 20 groups, 234 posts incl. reposts, 551 comments, 66 search-corpus
+   rows, 480 group memberships). Its source of truth is
+   [`src/data/enhanced-seed.sql`](src/data/enhanced-seed.sql) — edit that and run
+   `npm run db:build-seed` to regenerate the `.db` (schema is pulled from
+   `src/lib/schema.ts`; lessons are folded in from `seed.json`).
+2. **`src/data/seed.json`** — the small committed fallback seed, used when
+   `SEED_DB_PATH` is blank/invalid.
 
 `meta.seeded_from` records which path was used (`template` or `seed.json`). The
 template only acts on first run — once `DB_PATH` exists it is never re-copied, so
 it can't clobber a live session.
+
+**To reseed with the enhanced default after a change:** `npm run db:build-seed`
+(only if you edited the SQL) → `npm run db:reset` → `npm run dev`.
+
+### Make sure the app is running the DB you intend (read this first)
+
+> ⚠️ **The #1 gotcha:** seeding only runs on a **first run** — i.e. when the
+> `DB_PATH` file (default `./data/app.db`) **does not exist**. If that file already
+> exists, the app loads it **as-is and ignores `SEED_DB_PATH` completely**. So
+> editing seed config on a machine that has already run the app changes **nothing**
+> until you delete the live DB with `npm run db:reset`.
+
+Pick the row that matches what you want, set `SEED_DB_PATH` in `.env` accordingly,
+then run the commands:
+
+| You want… | `SEED_DB_PATH` in `.env` | Commands |
+|---|---|---|
+| The committed default content (`src/data/seed.json`) | **unset / blank** | `npm run db:reset && npm run dev` |
+| A specific seed template (e.g. `./data/enhanced-seed.db`) | set to that `.db` path | `npm run db:reset && npm run dev` |
+| Keep the current live data (no reseed) | _(anything — it's ignored)_ | just `npm run dev` |
+
+Step by step to (re)seed from scratch:
+
+1. **Set or clear `SEED_DB_PATH` in `.env`.**
+   - Use a template → `SEED_DB_PATH=./data/enhanced-seed.db`. It must be a **valid
+     SQLite file**; a missing/invalid/blank path silently falls back to
+     `src/data/seed.json` (the app never crashes over this).
+   - Use the committed JSON seed → leave the line blank or delete it.
+2. **Delete the live DB so the next launch counts as a first run:**
+   ```bash
+   npm run db:reset      # deletes DB_PATH and its -wal / -shm sidecars
+   ```
+3. **Launch** — on boot it recreates the schema and loads the chosen source:
+   ```bash
+   npm run dev
+   ```
+4. **Verify which source actually loaded** (don't guess):
+   - Watch the dev log: copying a template prints
+     `[db] initialized from seed template: <path>`.
+   - Or read the recorded marker straight from the DB:
+     ```bash
+     node -e "console.log(require('better-sqlite3')(process.env.DB_PATH||'./data/app.db').prepare(\"SELECT value FROM meta WHERE key='seeded_from'\").get())"
+     # → { value: 'template' }   (came from SEED_DB_PATH)
+     # → { value: 'seed.json' }  (came from the committed seed)
+     ```
+
+If step 4 doesn't match what you expected, you almost certainly skipped
+`npm run db:reset` (the old `app.db` is still in place) or `SEED_DB_PATH` points at
+a file that isn't a valid SQLite DB (so it fell back to `seed.json`).
 
 ### Create a seed template
 
@@ -301,6 +357,7 @@ reverts automatically on logout.
 | `npm run start` | Serve the production build (run `build` first). |
 | `npm run lint` | Run Next.js lint (ESLint config is not set up; may prompt on first run). |
 | `npm run db:reset` | Delete the live SQLite DB (honors `DB_PATH`) so the next `dev` reseeds. |
+| `npm run db:build-seed` | (Re)build the committed default template `./data/enhanced-seed.db` from `src/data/enhanced-seed.sql` (schema + lessons + the enhanced world). |
 | `npm run db:template -- <destPath>` | Snapshot the current DB into a clean seed template (default dest `./data/seed-template.db`). |
 
 ---
@@ -317,12 +374,14 @@ and never hardcode a hex. This mirrors the `DESIGN.md` "Luminous Learning" syste
 
 ## Display & motion
 
-- **Full-bleed shell.** The app shell fills the viewport edge-to-edge
-  (`width: 100%`, `height: 100dvh`) with **square outer corners** and no outer
-  padding — only the *inner* cards keep their rounding. Defined by the `shell` /
-  `frame` style objects in [`app-shell.tsx`](src/components/app-shell.tsx) and the
-  login [`page.tsx`](src/app/page.tsx). (`100dvh` tracks the visible viewport so
-  it fits around mobile browser chrome.)
+- **Shell aspect ratio (`ASPECT_RATIO`).** Default `device` = full-bleed: the shell
+  fills the viewport edge-to-edge (`width: 100%`, `height: 100dvh`) with **square
+  outer corners** and no outer padding — only the *inner* cards keep their rounding.
+  Set `ASPECT_RATIO=W:H` (e.g. `9:16`) to lock the frame to a fixed ratio, centered
+  with a dark letterbox. Parsed in [`src/lib/aspect.ts`](src/lib/aspect.ts) and
+  applied by the `frame` style in [`app-shell.tsx`](src/components/app-shell.tsx)
+  and the login [`page.tsx`](src/app/page.tsx). (`100dvh` tracks the visible
+  viewport so it fits around mobile browser chrome.)
 - **Motion is centralized** in [`globals.css`](src/app/globals.css) — only fades
   and pushes (`sc-anim-*` keyframes), short durations, and a tactile press-scale
   on every `button`/`a`. All of it respects `prefers-reduced-motion`.

@@ -174,7 +174,10 @@ export function AppShell({
         <div style={{ ...frame, ...frameSize(aspect) }}>
           {/* gradient fake-loading bar — replays on every route change */}
           <span key={`progress-${pathname}`} className="sc-progress" />
-          <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} onScrollCapture={onScroll}>
+          {/* Absolute-filled scroll layer: a DEFINITE height (= the frame) so the
+              inner overflow:auto scrolls reliably, incl. mobile Safari, instead of
+              relying on a deep flex:1 / min-height:0 chain. */}
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }} onScrollCapture={onScroll}>
             <div key={pathname} className="sc-anim-fade" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
               {children}
             </div>
