@@ -54,9 +54,11 @@ export const config = {
     | "anthropic",
   geminiApiKey: process.env.GEMINI_API_KEY?.trim() || "",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY?.trim() || "",
-  // Current, fast/cheap defaults for a ranking call — override via env.
-  geminiModel: process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash",
-  anthropicModel: process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5",
+  // Model selection. `LLM_MODEL` is the single knob — when set it picks the model
+  // for whichever provider is active. The provider-specific vars are finer-grained
+  // overrides; precedence: LLM_MODEL → GEMINI_MODEL/ANTHROPIC_MODEL → default.
+  geminiModel: process.env.LLM_MODEL?.trim() || process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash",
+  anthropicModel: process.env.LLM_MODEL?.trim() || process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5",
 
   // How many rows of search_corpus the LLM receives as candidates per search.
   llmCandidateRows: intEnv("LLM_CANDIDATE_ROWS", 20),
