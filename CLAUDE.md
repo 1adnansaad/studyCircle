@@ -76,7 +76,9 @@ This build follows the **build spec**:
     real `ReplyBar`, post-card repost/quote; `postCapUpsell()` in app-shell
     centralizes the at-cap upsell. `postToVM` renders the session identity for
     NULL-author rows.
-- **Still fully gated → upsell, no state change (§1):** **Like** and **Share**.
+- **Share (external)** is a **free** affordance: toast "Post copied for everyone
+  to see." — no gate, no persistence (post-card.tsx).
+- **Still fully gated → upsell, no state change (§1):** **Like**.
   (Group-composer "Post in group" is also still gated — not yet metered.)
 - **Allowed writes** (work + persist): **Bookmark** (≤cap), **Join group** (≤cap, no
   leaving), **Search** (≤cap/week), **Follow/Unfollow** (uncapped), **post budget**

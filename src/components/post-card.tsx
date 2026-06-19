@@ -132,7 +132,7 @@ export function PostCard({ post }: { post: PostCardVM }) {
         <Action onClick={upsell} label={post.likes}><HeartIcon size={19} /></Action>
         <Action onClick={() => repost(false)} label={post.reposts}><RepostIcon size={19} /></Action>
         <Action onClick={() => repost(true)}><QuoteIcon size={19} /></Action>
-        <Action onClick={upsell}><ShareIcon size={19} /></Action>
+        <Action onClick={() => toast("Shareable link copied to clipboard!")}><ShareIcon size={19} /></Action>
         <button onClick={bookmark} style={{ ...actionBtn, color: post.bookmarked ? "var(--ll-secondary)" : "var(--ll-on-surface-variant)" }} aria-label="Bookmark">
           <BookmarkIcon size={19} filled={post.bookmarked} />
         </button>

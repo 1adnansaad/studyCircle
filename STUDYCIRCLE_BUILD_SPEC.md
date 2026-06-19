@@ -33,12 +33,13 @@ One rule: **affordances visible, reads free, writes gated — except the metered
 | **Reads — always free** | Browse feed, Groups, search results, post detail/threads, profiles | Work normally |
 | **Allowed writes** (work + persist) | **Bookmark** (≤`BOOKMARK_CAP`, default 5) · **Join group** (≤`JOIN_GROUP_CAP`, default 2, no leaving) · **Search** (≤`SEARCH_WEEKLY_CAP`/week, default 7) · **Follow / Unfollow** (uncapped) | Execute, persist, show quota where capped; block at cap |
 | **Metered writes** (work + persist, one shared weekly budget) | **Post · Comment · Reply · Repost · Quote** — all draw from `POST_WEEKLY_CAP`/week (default 5) | Persist as user-authored content (appears in feed/threads, interactable, cleared on logout); **monotonic** — un-reposting/un-quoting never refunds; block at cap → upsell |
-| **Gated writes** (button visible; tap → subscribe/upsell) | **Like, Share** | Show upsell; no state change |
+| **Free affordance** (no gate, no persistence) | **Share (external)** | Confirmation toast **"Post copied for everyone to see."** — no upsell, no state change |
+| **Gated writes** (button visible; tap → subscribe/upsell) | **Like** | Show upsell; no state change |
 | **Real bridge** | Tap a **Shikho embed** | Opens lesson preview / routes toward the course |
 
 **Change from the design spec:** Follow has moved from *gated* to *allowed* — it now persists and drives follower counts (§2, §3).
 
-**Change (user, 2026-06-19):** Post / Comment / Reply / Repost / Quote moved from *gated* to a **metered** write sharing one weekly budget `POST_WEEKLY_CAP`. User-authored posts join the same `posts` table (author_profile_id NULL, `session_id` set), appear in the feed, and are fully interactable; comments persist in threads; reposts/quotes create a referencing feed post. All of it is mutable-layer state (cleared on logout via cascade). Only **Like** and **Share** remain fully gated.
+**Change (user, 2026-06-19):** Post / Comment / Reply / Repost / Quote moved from *gated* to a **metered** write sharing one weekly budget `POST_WEEKLY_CAP`. User-authored posts join the same `posts` table (author_profile_id NULL, `session_id` set), appear in the feed, and are fully interactable; comments persist in threads; reposts/quotes create a referencing feed post. All of it is mutable-layer state (cleared on logout via cascade). **Share (external)** is now a free confirmation ("Post copied for everyone to see.") — only **Like** remains fully gated.
 
 The gate prompt doubles as the subscribe funnel → points at the paid **C9–C12 courses**. One reusable Upsell component for every gated write.
 
@@ -90,7 +91,7 @@ So: **persist on exit, reset on logout.**
 - **S2 Home** — Replica of the current home (screenshot), unchanged except the nav (§4). Toggle → S3; Search → S8; any other home control → dead-end.
 - **S3 StudyCircle · Feed** — Top bar (avatar/menu → Sidebar) + tabs **Feed | Groups** + compose entry → S9. Scrolling PostCards, some with a Shikho embed. **Feed renders seeded posts regardless of follow state** — never an empty "follow someone" wall. Card body → S5; name-card → S6. Tab → S4.
 - **S4 StudyCircle · Groups** — GroupCards (subject, active-user count, posts/day). New user → suggested groups; own joined list "Groups empty" until joined. Not-joined → join-confirm → joined / at-cap block. Joined → S7.
-- **S5 Post detail / thread** — Original PostCard pinned + comment thread (each comment uses NameCard). Reply input visible and **works** — a reply persists in the thread and consumes the weekly post budget (block at cap → upsell). Reading free; Repost/Quote also metered; Like/Share → upsell. Bookmark metered. Embeds → S10. Name-card → S6.
+- **S5 Post detail / thread** — Original PostCard pinned + comment thread (each comment uses NameCard). Reply input visible and **works** — a reply persists in the thread and consumes the weekly post budget (block at cap → upsell). Reading free; Repost/Quote also metered; Share → "post copied" toast (free); Like → upsell. Bookmark metered. Embeds → S10. Name-card → S6.
 - **S6 Profile (any user, incl. own)** — Header = NameCard + **follower count** and **following count**. **Follow/Following button works and persists** (§3). Sections: Posts, Groups. Own profile uses captured Name/Class. Post → S5; group → join/enter rules.
 - **S7 Group view** — Title becomes group name + back button. Header: name, description, privacy (seed). Member PostCards behave like feed. Back → S4.
 - **S8 Explore (Search)** — Entering flips toggle → "Home". NL search field with live **"{n} / 120"** counter; weekly-search meter ("{n} of {SEARCH_WEEKLY_CAP}"); subscribe ad for trending; default state shows trending posts. Submit decrements meter (block at cap) and calls the LLM (§9). Results = standard PostCards. Result → S5.
@@ -104,7 +105,7 @@ So: **persist on exit, reset on logout.**
 
 ## 6. Components
 
-- **PostCard** — NameCard header; text; optional image; optional ShikhoEmbed; optional reposted-original reference; actions **Comment · Like · Repost · Quote · Share · Bookmark**. Comment → opens the thread (reply there); Repost/Quote persist (metered); Bookmark allowed/metered; Like/Share gated. Reused in feed, Groups, results, profile.
+- **PostCard** — NameCard header; text; optional image; optional ShikhoEmbed; optional reposted-original reference; actions **Comment · Like · Repost · Quote · Share · Bookmark**. Comment → opens the thread (reply there); Repost/Quote persist (metered); Bookmark allowed/metered; Share → free "post copied" toast; Like gated. Reused in feed, Groups, results, profile.
 - **NameCard** — no profile photo; user tag (→ S6), class tag, leaderboard tag (seed), privacy tag (seed).
 - **ShikhoEmbed** — deep-indigo thumbnail, lesson title, CTA শুরু করো / ৩ দিন ফ্রি; tap → S10. In feed, Groups, results, composer preview.
 - **GroupCard** — subject, active-user count, posts/day; state-aware (not-joined → join flow; joined → S7).
