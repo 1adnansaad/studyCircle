@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/lib/session";
+import { config } from "@/lib/config";
+import { frameSize } from "@/lib/aspect";
 import { loginAction } from "./actions";
 import { TierChoice } from "@/components/tier-choice";
 
@@ -9,9 +11,10 @@ export const dynamic = "force-dynamic";
 export default function LoginPage() {
   if (getCurrentSession()) redirect("/home");
 
+  const aspect = config.aspectRatio;
   return (
-    <main style={shell}>
-      <div style={frame}>
+    <main style={{ ...shell, ...(aspect ? { background: "#0c0e12", alignItems: "center" } : null) }}>
+      <div style={{ ...frame, ...frameSize(aspect) }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 4 }}>
           <div style={{ width: 38, height: 38, borderRadius: 11, background: "var(--ll-gradient-deep)" }} />
           <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 800, fontSize: 20, color: "var(--ll-primary)" }}>Shikho</span>

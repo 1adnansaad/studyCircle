@@ -7,6 +7,8 @@
  * from a client component.
  */
 
+import { parseAspect } from "./aspect";
+
 function intEnv(name: string, fallback: number): number {
   const raw = process.env[name];
   if (raw == null || raw.trim() === "") return fallback;
@@ -15,6 +17,9 @@ function intEnv(name: string, fallback: number): number {
 }
 
 export const config = {
+  // App-frame aspect ratio: "device" (default, full-bleed) or "W:H" (e.g. "9:16").
+  aspectRatio: parseAspect(process.env.ASPECT_RATIO),
+
   // Database
   dbPath: process.env.DB_PATH?.trim() || "./data/app.db",
   // Optional SQLite file used as the DEFAULT-SEED TEMPLATE on first run. When set

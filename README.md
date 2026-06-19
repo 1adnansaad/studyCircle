@@ -248,6 +248,10 @@ which render as post cards.
   session. Once exceeded, search is blocked with an "AI tokens exhausted" toast
   until logout. Lower it (e.g. `500`) to demo the limit quickly.
 - **Search frequency:** also gated by `SEARCH_WEEKLY_CAP` (the weekly meter).
+- **Premium "Trending now":** Premium users get an AI card that clusters the post
+  corpus into ≤5 topics (tapping one opens its posts). Free users see the locked
+  promo instead. With no key / on failure it falls back to subject-grouped demo
+  topics. This card is independent of the weekly-search counter.
 
 ```bash
 # example: use Anthropic
@@ -334,9 +338,10 @@ and never hardcode a hex. This mirrors the `DESIGN.md` "Luminous Learning" syste
 ```
 src/
   app/
-    page.tsx            S1 Login (redirects to /home when logged in)
-    actions.ts          server actions (auth + the allowed writes + search)
-    globals.css         imports tokens, base styles
+    layout.tsx          root layout (fonts, globals.css)
+    page.tsx            S1 Login + tier choice (redirects to /home when logged in)
+    actions.ts          server actions (auth + allowed/metered writes + search)
+    globals.css         imports tokens, base styles + motion keyframes
     (app)/              app routes behind the phone shell
       layout.tsx        AppShell (nav, toggle, sidebar, modals) + session guard
       home/             S2 Home (Shikho replica)
@@ -344,21 +349,34 @@ src/
       post/[id]/        S5 Post detail
       profile/[id]/     S6 Profile (+ /me)
       group/[id]/       S7 Group view
-      explore/          S8 Explore (AI search)
+      explore/          S8 Explore (AI search + Premium trending)
       composer/         S9 Composer
       lesson/[id]/      S10 Lesson preview (the bridge to courses)
       bookmarks/        My Bookmarks
-  components/           app-shell, post-card, explore-client, icons, …
+  components/
+    app-shell.tsx       nav, Home⇄StudyCircle toggle, sidebar, modal/toast layer
+    tier-choice.tsx     Free / Premium login control
+    post-card.tsx       PostCard (+ CommentCard, like/repost, clickable chips)
+    explore-client.tsx  AI composer + search results + trending card
+    follow-button.tsx   follow / unfollow (derived count)
+    group-card.tsx      group list/detail card + join confirm
+    screen-widgets.tsx  tabs, reply bar, composer, meter chips
+    screen-chrome.tsx   shared screen headers / scaffolding
+    layout-bits.tsx     small layout primitives
+    icons.tsx           icon set
   lib/
     config.ts           env-derived config (single source for caps/paths/LLM)
     db.ts               SQLite connection + first-run init (+ seed template)
     schema.ts           DDL (world tables + mutable user layer)
+    session.ts          create / get / logout (single active session, tier)
     seed.ts             seed.json loader + search-corpus backfill
-    seed*.json          → src/data/seed.json (committed default seed source)
-    repo.ts             reads + the four allowed writes + derived counts
+    repo.ts             reads + allowed/metered writes + derived counts + tier
     view.ts             server view-models for the screens
-    llm.ts              server-side provider calls + keyword fallback
+    llm.ts              server-side provider calls (rank + trending) + fallback
     format.ts           Bengali numerals / relative time / tags
+    health.ts           Step-1 boot-counter persistence proof
+  data/
+    seed.json           committed default seed source (Bengali content)
 data/                   live SQLite (gitignored); optional seed template
 scripts/                db-reset.mjs, db-template.mjs
 ```

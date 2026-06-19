@@ -119,12 +119,15 @@ side filled, centered between Study and Inbox), NameCard with no photo + clickab
 Explore search, bottom-sheet modals.
 
 **Shell & motion (current):**
-- **Full-bleed shell** — the app/login frame fills the viewport (`width: 100%`,
-  `height: 100dvh`), **square outer corners**, no outer padding; inner cards keep
-  their rounding. Set in the `shell`/`frame` style objects in `app-shell.tsx` and
-  `page.tsx`. (There is no aspect-ratio / device-vs-aspect display mode — an
-  earlier `DISPLAY_MODE`/`ASPECT_RATIO_*` experiment was rolled back; don't
-  reintroduce those env vars unless asked.)
+- **Shell aspect ratio (`ASPECT_RATIO`, user 2026-06-19)** — `"device"` (default)
+  = full-bleed, frame fills the viewport (`width: 100%`, `height: 100dvh`),
+  **square outer corners**, no outer padding. `"W:H"` (e.g. `9:16`) = lock the
+  frame to that ratio, centered with a dark letterbox around it. Parsed once in
+  `config.ts` (`config.aspectRatio` via `parseAspect` in `src/lib/aspect.ts`),
+  passed to `AppShell` as the `aspect` prop and read directly in login `page.tsx`;
+  both apply `frameSize(aspect)` to the `frame` style. Inner cards keep their
+  rounding. (This replaces the old rolled-back `DISPLAY_MODE`/`ASPECT_RATIO_*`
+  experiment — a single clean `ASPECT_RATIO` env now.)
 - **Motion** lives in `globals.css`: fades + pushes only (`sc-anim-*`), a press
   scale on `button`/`a`, all under `prefers-reduced-motion`.
 - **Page-switch loading bar** — a gradient `.sc-progress` element keyed by

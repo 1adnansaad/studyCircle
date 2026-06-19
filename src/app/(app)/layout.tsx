@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/lib/session";
-import { publicCaps } from "@/lib/config";
+import { publicCaps, config } from "@/lib/config";
 import { bookmarksView } from "@/lib/view";
 import { initials, ownTag, classTag } from "@/lib/format";
 import { AppShell } from "@/components/app-shell";
@@ -30,6 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         postWeeklyCap: publicCaps.postWeeklyCap,
       }}
       bookmarks={bm.posts.map((p) => ({ id: p.id, tag: p.tag, body: p.body }))}
+      aspect={config.aspectRatio}
     >
       {children}
     </AppShell>

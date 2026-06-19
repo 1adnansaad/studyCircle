@@ -12,6 +12,7 @@ import {
   type UIEvent,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { frameSize, type Aspect } from "@/lib/aspect";
 import {
   logoutAction,
   joinGroupAction,
@@ -83,11 +84,13 @@ export function AppShell({
   session,
   caps,
   bookmarks,
+  aspect,
   children,
 }: {
   session: ShellSession;
   caps: ShellCaps;
   bookmarks: ShellBookmark[];
+  aspect: Aspect;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -167,8 +170,8 @@ export function AppShell({
 
   return (
     <AppCtx.Provider value={ctx}>
-      <main style={shell}>
-        <div style={frame}>
+      <main style={{ ...shell, ...(aspect ? letterbox : null) }}>
+        <div style={{ ...frame, ...frameSize(aspect) }}>
           {/* gradient fake-loading bar — replays on every route change */}
           <span key={`progress-${pathname}`} className="sc-progress" />
           <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} onScrollCapture={onScroll}>
@@ -386,7 +389,10 @@ export { UsersIcon, CheckIcon, CloseIcon };
 
 // ── styles ───────────────────────────────────────────────────────────────────
 const shell: React.CSSProperties = { minHeight: "100dvh", display: "flex", justifyContent: "center", alignItems: "center", padding: 0 };
-const frame: React.CSSProperties = { width: "100%", height: "100dvh", background: "var(--ll-surface)", borderRadius: 0, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" };
+// Letterbox backdrop shown around a fixed-aspect frame (ASPECT_RATIO = "W:H").
+const letterbox: React.CSSProperties = { background: "#0c0e12" };
+// width/height come from frameSize(aspect) at render time (device = 100% / 100dvh).
+const frame: React.CSSProperties = { background: "var(--ll-surface)", borderRadius: 0, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" };
 const nav: React.CSSProperties = { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 15, display: "flex", background: "var(--ll-surface-container-lowest)", boxShadow: "var(--ll-shadow-bottom-nav)", padding: "6px 4px 9px" };
 const navBtn: React.CSSProperties = { flex: 1, border: "none", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "7px 0" };
 const toggleBtn: React.CSSProperties = { flex: 1, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px 0" };
