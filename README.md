@@ -166,7 +166,7 @@ on-screen meters, and the copy together** — change one and the UI text follows
 | `LLM_MODEL` | _(unset)_ | model id | **Single knob to pick the model** for whichever provider is active (e.g. `gemini-2.5-pro`, `claude-sonnet-4-6`). Overrides the two below. Unset → provider default. |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | model id | Per-provider Gemini model (used only if `LLM_MODEL` is blank). |
 | `ANTHROPIC_MODEL` | `claude-haiku-4-5` | model id | Per-provider Anthropic model (used only if `LLM_MODEL` is blank). |
-| `LLM_CANDIDATE_ROWS` | `20` | integer ≥ 1 | How many rows of the `search_corpus` table are sent to the model per search. |
+| `LLM_CANDIDATE_ROWS` | `20` | integer ≥ 1 | How many `search_corpus` rows (newest first) are sent to the model per search. The corpus now covers **every** seeded post — raise this to let the model rank more of them per query. |
 | `LLM_SESSION_TOKEN_BUDGET` | `20000` | integer ≥ 0 | Per-demo-session LLM token cap. Exceeding it blocks search with an "AI tokens exhausted" toast. Resets on logout. |
 | `AI_DEBUG` | `false` | `1`/`true`/`on` | When on, AI search and "Trending now" show a **popup with the step-by-step log** of the AI call (provider, key present?, HTTP status, error body, parse result, fallback reason) so you can see why an AI call failed. Never logs the API key. |
 | `BOOKMARK_CAP` | `5` | integer ≥ 1 | Max bookmarks on the free trial. |
@@ -195,11 +195,12 @@ search corpus). There are two sources, in priority order:
    contents are copied in as the starting database, and the mutable user layer is
    started clean. **This is the default path** — the repo ships with
    `SEED_DB_PATH=./data/enhanced-seed.db`, the large **enhanced** dataset (110
-   profiles, 20 groups, 234 posts incl. reposts, 551 comments, 66 search-corpus
-   rows, 480 group memberships). Its source of truth is
-   [`src/data/enhanced-seed.sql`](src/data/enhanced-seed.sql) — edit that and run
+   profiles, 20 groups, 234 posts incl. reposts, 551 comments, 480 group
+   memberships, and a `search_corpus` row for **every** post). Its source of truth
+   is [`src/data/enhanced-seed.sql`](src/data/enhanced-seed.sql) — edit that and run
    `npm run db:build-seed` to regenerate the `.db` (schema is pulled from
-   `src/lib/schema.ts`; lessons are folded in from `seed.json`).
+   `src/lib/schema.ts`; lessons are folded in from `seed.json`; the corpus is
+   completed to cover all posts).
 2. **`src/data/seed.json`** — the small committed fallback seed, used when
    `SEED_DB_PATH` is blank/invalid.
 

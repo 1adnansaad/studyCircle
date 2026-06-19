@@ -14,15 +14,16 @@ function hoursAgoIso(hours: number): string {
 }
 
 /**
- * Idempotent migration: populate search_corpus from existing posts when it's
- * empty (e.g. a DB seeded before search_corpus existed). Derives rows from the
- * live tables so it works regardless of how the world was seeded. No-op once
- * the corpus has rows; never touches the mutable user layer.
+ * Idempotent: ensure EVERY seeded post has a search_corpus row, so AI search
+ * candidates cover the whole feed (not just a stratified subset). Derives rows
+ * from the live tables, so it works regardless of how the world was seeded, and
+ * fills only the posts that are still missing — a no-op once the corpus is
+ * complete. Session-authored posts (author_profile_id NULL) are excluded (the
+ * corpus is seeded-world); the mutable user layer is never touched.
  */
 export function backfillSearchCorpus(db: Database.Database): void {
-  const empty = (db.prepare("SELECT COUNT(*) AS n FROM search_corpus").get() as { n: number }).n === 0;
   const hasPosts = (db.prepare("SELECT COUNT(*) AS n FROM posts").get() as { n: number }).n > 0;
-  if (!empty || !hasPosts) return;
+  if (!hasPosts) return;
 
   const rows = db
     .prepare(
@@ -30,12 +31,14 @@ export function backfillSearchCorpus(db: Database.Database): void {
               e.lesson_title, e.subject
        FROM posts p
        JOIN profiles pr ON pr.id = p.author_profile_id
-       LEFT JOIN post_embeds e ON e.post_id = p.id`
+       LEFT JOIN post_embeds e ON e.post_id = p.id
+       WHERE p.id NOT IN (SELECT post_id FROM search_corpus)`
     )
     .all() as {
     post_id: string; body: string; created_at: string;
     user_tag: string; class: number | null; lesson_title: string | null; subject: string | null;
   }[];
+  if (!rows.length) return;
 
   const insert = db.prepare(
     `INSERT INTO search_corpus (id, post_id, user_tag, class, subject, search_text, created_at)

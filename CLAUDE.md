@@ -226,8 +226,11 @@ is never re-copied. `meta.seeded_from` records `template` vs `seed.json`.
       cannot persist — each routes to the upsell. Added bottom-nav auto-hide on
       scroll (§4).
 - [x] **6. Explore search → LLM (§9)** (server-side; provider via LLM_PROVIDER).
-      Dedicated `search_corpus` table (seeded world, denormalized post inputs;
-      backfilled idempotently for pre-existing DBs in `db.ts`). `src/lib/llm.ts`
+      Dedicated `search_corpus` table (seeded world, denormalized post inputs).
+      `backfillSearchCorpus` (seed.ts, run every boot from `db.ts`) idempotently
+      ensures **every seeded post has a corpus row** (fills only missing ones;
+      session posts excluded) — so the default data's corpus covers the whole
+      feed, not a stratified subset. `src/lib/llm.ts`
       ranks `LLM_CANDIDATE_ROWS` candidates via gemini/anthropic over fetch
       (Anthropic `/v1/messages`, x-api-key + anthropic-version 2023-06-01; default
       models `gemini-2.5-flash` / `claude-haiku-4-5`), with a keyword fallback when

@@ -62,6 +62,36 @@ insLessons(lessons);
 // 3. The enhanced world (its own PRAGMA foreign_keys=ON + BEGIN/COMMIT).
 db.exec(fs.readFileSync(SQL, "utf8"));
 
+// 4. Ensure EVERY seeded post has a search_corpus row (the SQL only ships a
+//    stratified subset). Mirrors backfillSearchCorpus() in src/lib/seed.ts so
+//    the template is complete on its own — AI search then covers the whole feed.
+const missing = db
+  .prepare(
+    `SELECT p.id AS post_id, p.body, p.created_at, pr.user_tag, pr.class,
+            e.lesson_title, e.subject
+     FROM posts p
+     JOIN profiles pr ON pr.id = p.author_profile_id
+     LEFT JOIN post_embeds e ON e.post_id = p.id
+     WHERE p.id NOT IN (SELECT post_id FROM search_corpus)`
+  )
+  .all();
+const insCorpus = db.prepare(
+  `INSERT INTO search_corpus (id, post_id, user_tag, class, subject, search_text, created_at)
+   VALUES (@id, @post_id, @user_tag, @class, @subject, @search_text, @created_at)`
+);
+db.transaction((rows) => {
+  for (const r of rows)
+    insCorpus.run({
+      id: `sc_${r.post_id}`,
+      post_id: r.post_id,
+      user_tag: r.user_tag,
+      class: r.class,
+      subject: r.subject,
+      search_text: r.lesson_title ? `${r.body}\n[lesson] ${r.lesson_title}` : r.body,
+      created_at: r.created_at,
+    });
+})(missing);
+
 const count = (t) => db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get().n;
 const summary = {
   profiles: count("profiles"),
