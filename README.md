@@ -1,15 +1,19 @@
 # StudyCircle
 
 A working demo of **StudyCircle** — a social feature inside the **Shikho** app
-(Bangla edtech, Class 6–12). The whole demo is seen from the perspective of a
-**brand-new user on a free trial**: reads are free, a few writes work and persist
-(metered), and the rest open a subscribe upsell.
+(Bangla edtech, Class 6–12). At login the demo identity picks a tier — a
+**brand-new user on a free trial** (reads free, a few writes metered, the rest
+open a subscribe upsell) or a **Premium** user (every cap bypassed).
 
 - **Mobile-first web app** (Next.js App Router + SQLite). No native app / APK.
-- **Real persistence** — bookmarks, joined groups, follows, search usage, and AI
-  token usage survive a server restart and a browser close.
+- **Free / Premium tiers** chosen at login — Premium bypasses every cap and the
+  meters read **"Unlimited ✦"**.
+- **Real persistence** — bookmarks, joined groups, follows, search usage, AI token
+  usage, and user-authored posts/comments survive a server restart and a browser
+  close.
 - **Logout is the only reset.** Exit/close/restart resets nothing.
-- **Server-side AI Explore search** with a pluggable provider (Gemini / Anthropic).
+- **Server-side AI Explore search** with a pluggable provider (Gemini / Anthropic),
+  plus a Premium **AI "Trending now"** topic summarizer.
 - **Everything configurable via env** — free-trial caps, LLM provider/models,
   token budget, and even the default seed data.
 
@@ -46,8 +50,8 @@ npm run dev        # → http://localhost:3000
 ```
 
 First run creates `./data/app.db` and loads the seed data automatically. Open the
-URL, log in with any name + class, and explore. **Log out** to reset the session
-back to a clean slate.
+URL, log in with any name + class and pick a tier (**Free** trial or **Premium**),
+and explore. **Log out** to reset the session back to a clean slate.
 
 No API key is required to try it — Explore search falls back to keyword matching
 when no LLM key is configured.
@@ -165,7 +169,11 @@ on-screen meters, and the copy together** — change one and the UI text follows
 | `BOOKMARK_CAP` | `5` | integer ≥ 1 | Max bookmarks on the free trial. |
 | `JOIN_GROUP_CAP` | `2` | integer ≥ 1 | Max joined groups (no leaving once joined). |
 | `SEARCH_WEEKLY_CAP` | `7` | integer ≥ 1 | Max Explore searches per week. |
+| `POST_WEEKLY_CAP` | `5` | integer ≥ 1 | Shared weekly write budget — post / comment / reply / repost all draw from it. Monotonic (un-reposting never refunds). |
 | `FOLLOW_CAP` | _(unset)_ | integer ≥ 1 | Optional cap on follows. Unset → following is uncapped. |
+
+Tier is **not** an env variable — it is chosen per login (Free / Premium), and
+Premium bypasses all of the caps above.
 
 Notes:
 - **Secrets never reach the browser.** LLM keys are read server-side only.
@@ -252,14 +260,27 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ## Free-trial model
 
-One rule: **affordances visible, reads free, writes gated — except four metered
-allowed writes.**
+One rule for the **Free** tier: **affordances visible, reads free, writes gated —
+except the metered allowed writes.** A **Premium** login bypasses every cap (meters
+render "Unlimited ✦").
 
-| Bucket | Actions | Behavior |
+| Bucket | Actions | Behavior (Free tier) |
 |---|---|---|
 | **Reads** | Browse feed, groups, search, post threads, profiles | Always free |
 | **Allowed writes** | **Bookmark** (≤ `BOOKMARK_CAP`) · **Join group** (≤ `JOIN_GROUP_CAP`, no leaving) · **Search** (≤ `SEARCH_WEEKLY_CAP`/week) · **Follow / Unfollow** (uncapped) | Work and persist; show quota; block at cap |
-| **Gated writes** | Comment, Reply, Like, Repost, Quote, Share, and the terminal **Post** | Open the subscribe upsell; no state change |
+| **Metered writes** | **Post · Comment · Reply · Repost** — one shared weekly budget (≤ `POST_WEEKLY_CAP`) | Work and persist **real content**; consume one each; monotonic; route to upsell at cap |
+| **Gated writes** | **Like** (and group "Post in group") | Open the subscribe upsell; no state change |
+| **Free affordance** | **Share** (external) | Copies a link + toast; no gate, no persistence |
+
+User-authored posts/comments are **real** — they live in the same tables as the
+seeded content (with the session id), appear at the top of the feed and on your
+profile, are fully interactable, and are cleared on logout via the session cascade.
+
+Differences for **Premium**: caps are bypassed; **Like** becomes a local toggle
+(heart turns red, "Liked." toast — seed-only, not persisted); the Explore
+**"Trending now"** card runs the AI topic summarizer instead of showing the locked
+promo; lesson embeds drop the "৩ দিন ফ্রি" trial framing. The **Quote** button has
+been removed from the post card (Repost remains).
 
 Following someone increments that profile's displayed follower count by 1
 (unfollowing decrements it) — the count is **derived**, never stored, so it
@@ -350,8 +371,10 @@ Two layers in SQLite:
 
 - **Seeded world** (never cleared on logout): `profiles`, `posts`, `post_embeds`,
   `comments`, `groups`, `lessons`, `profile_groups`, `search_corpus`.
-- **Mutable user layer** (cleared on logout): `session`, `bookmarks`,
-  `joined_groups`, `follows`, `search_usage`, `llm_token_usage`.
+- **Mutable user layer** (cleared on logout): `session` (carries the chosen Free /
+  Premium tier), `bookmarks`, `joined_groups`, `follows`, `search_usage`,
+  `post_usage`, `llm_token_usage`, plus user-authored rows in `posts` / `comments`
+  (tagged with `session_id`).
 
 The mutable tables reference `session(id) ON DELETE CASCADE`, so **logout** is a
 single `DELETE FROM session` that cascades the rest away. The seeded world is
