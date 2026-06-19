@@ -28,6 +28,8 @@ A working demo of **StudyCircle**, a social feature inside the existing **Shikho
 
 One rule: **affordances visible, reads free, writes gated — except the metered/allowed writes below.**
 
+**Account tier (user, 2026-06-19):** Login captures a tier — **Free trial** or **Premium** (stored on `session.tier`). **Premium bypasses every freemium cap** (bookmark / join group / search-per-week / weekly post budget) — all unlimited, and every meter renders **"Unlimited ✦"** instead of `used / cap`. The caps and gates below describe the **Free** tier. Follow is uncapped for both. Like stays gated for both (it's a feature gate, not a quota).
+
 | Bucket | Actions | Behavior |
 |---|---|---|
 | **Reads — always free** | Browse feed, Groups, search results, post detail/threads, profiles | Work normally |
@@ -87,14 +89,14 @@ So: **persist on exit, reset on logout.**
 
 ## 5. Screens
 
-- **S1 Login** — Welcome card: *"Welcome! This is a demo from the perspective of a brand-new user on a free trial."* Inputs: Name (text), Class (dropdown 6–12). Continue → S2. Captures identity.
+- **S1 Login** — Welcome card. Inputs: Name (text), Class (dropdown 6–12), and an **Account type** segmented control — **Free trial** (caps apply) or **Premium ✦** (everything uncapped). Continue → S2. Captures identity + tier (`session.tier`). A tier badge shows in the Sidebar.
 - **S2 Home** — Replica of the current home (screenshot), unchanged except the nav (§4). Toggle → S3; Search → S8; any other home control → dead-end.
 - **S3 StudyCircle · Feed** — Top bar (avatar/menu → Sidebar) + tabs **Feed | Groups** + compose entry → S9. Scrolling PostCards, some with a Shikho embed. **Feed renders seeded posts regardless of follow state** — never an empty "follow someone" wall. Card body → S5; name-card → S6. Tab → S4.
 - **S4 StudyCircle · Groups** — GroupCards (subject, active-user count, posts/day). New user → suggested groups; own joined list "Groups empty" until joined. Not-joined → join-confirm → joined / at-cap block. Joined → S7.
 - **S5 Post detail / thread** — Original PostCard pinned + comment thread (each comment uses NameCard). Reply input visible and **works** — a reply persists in the thread and consumes the weekly post budget (block at cap → upsell). Reading free; Repost/Quote also metered; Share → "post copied" toast (free); Like → upsell. Bookmark metered. Embeds → S10. Name-card → S6.
 - **S6 Profile (any user, incl. own)** — Header = NameCard + **follower count** and **following count**. **Follow/Following button works and persists** (§3). Sections: Posts, Groups. Own profile uses captured Name/Class. Post → S5; group → join/enter rules.
 - **S7 Group view** — Title becomes group name + back button. Header: name, description, privacy (seed). Member PostCards behave like feed. Back → S4.
-- **S8 Explore (Search)** — Entering flips toggle → "Home". NL search field with live **"{n} / 120"** counter; weekly-search meter ("{n} of {SEARCH_WEEKLY_CAP}"); subscribe ad for trending; default state shows trending posts. Submit decrements meter (block at cap) and calls the LLM (§9). Results = standard PostCards. Result → S5.
+- **S8 Explore (Search)** — Entering flips toggle → "Home". NL search field with live **"{n} / 120"** counter; weekly-search meter ("{n} of {SEARCH_WEEKLY_CAP}", or "Unlimited ✦" for Premium); default state shows trending posts. Submit decrements meter (block at cap; Premium unlimited) and calls the LLM (§9). Results = standard PostCards. Result → S5. **Trending now (AI) card:** its CTA asks the LLM to cluster the feed into up to **5 trending topics** (title + one-line summary); tapping a topic opens the posts it summarized (as PostCards). **No LLM key / call fails → deterministic demo topics** (grouped by subject) with the copy *"LLM unavailable — showing demo topics."* — still tappable to real posts.
 - **S9 Composer** — Fully clickable. Author preview (own Name/Class), text field, optional image attach, privacy selector/chip (display-only seed), **"Embed from Shikho" picker** attaching a ShikhoEmbed preview, and the **weekly post meter** (`used / POST_WEEKLY_CAP`). Post **publishes a real post** (own-authored, appears at the top of the Feed and on the own profile) and consumes the weekly budget; at the cap → upsell (→ C9–C12 courses).
 - **S10 Lesson preview (the bridge)** — Reached from any embed. Thumbnail, lesson title, CTA **শুরু করো / ৩ দিন ফ্রি**, routes toward the course. Make it feel real, not a dead-end.
 - **Sidebar (drawer)** — Profile (own, S6) · My Bookmarks (the set; empty = "Bookmarks empty"; remove flow lands here) · Settings (dead-end).
@@ -129,7 +131,7 @@ So: **persist on exit, reset on logout.**
 > Posts/comments are *world* tables, but a row with `session_id` set is **user-authored mutable state**: the FK cascade deletes it on logout, so the seeded world is byte-identical before/after a session.
 
 **Mutable "user layer" tables (cleared on logout):**
-- `session` (id, name, class, created_at)
+- `session` (id, name, class, **tier** [`free` | `premium`], created_at) — Premium bypasses all caps
 - `bookmarks` (session_id, post_id) — enforce ≤`BOOKMARK_CAP` server-side
 - `joined_groups` (session_id, group_id) — enforce ≤`JOIN_GROUP_CAP` server-side
 - `follows` (session_id, profile_id) — uncapped
@@ -155,7 +157,9 @@ First-run: if `./data/app.db` is missing, create the schema and load this seed. 
 
 ## 9. LLM / Explore search
 
-The Explore search (S8) calls the model **server-side** (API route): take the query, pull candidate posts from the DB, ask the model to rank/return the relevant ones, render as PostCards. Gated by the weekly-search counter (block at `SEARCH_WEEKLY_CAP` before calling). Provider selectable via `LLM_PROVIDER` (gemini default, anthropic supported). Use the current SDK and model — don't hardcode a stale model name.
+The Explore search (S8) calls the model **server-side** (API route): take the query, pull candidate posts from the DB, ask the model to rank/return the relevant ones, render as PostCards. Gated by the weekly-search counter (block at `SEARCH_WEEKLY_CAP` before calling; Premium bypasses both the search cap and the token budget). Provider selectable via `LLM_PROVIDER` (gemini default, anthropic supported). Use the current SDK and model — don't hardcode a stale model name.
+
+**Trending topic summaries** (S8 "Trending now" card): a second server-side call (`summarizeTopics` in `llm.ts` → `summarizeTrendingAction`) clusters the same candidate corpus into up to **5 topics**, each `{title, summary, postIds}`; the action resolves the ids to PostCards so tapping a topic shows its posts. **No key / parse failure / call error → deterministic `fallbackTopics`** (grouped by subject) with `fallback: true`, surfaced as *"LLM unavailable — showing demo topics."* This path is independent of the weekly-search counter.
 
 ---
 

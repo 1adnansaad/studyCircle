@@ -11,6 +11,7 @@ import {
   toggleFollow,
   recordSearch,
   searchesUsed,
+  isPremium,
   createPost,
   createComment,
   createRepost,
@@ -22,7 +23,7 @@ import {
   type JoinResult,
 } from "@/lib/repo";
 import { config, publicCaps } from "@/lib/config";
-import { rankSearch } from "@/lib/llm";
+import { rankSearch, summarizeTopics } from "@/lib/llm";
 import { searchResultsView } from "@/lib/view";
 import type { PostCardVM } from "@/lib/view";
 
@@ -41,8 +42,9 @@ function requireSession(): string {
 export async function loginAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const klass = Number.parseInt(String(formData.get("class") ?? ""), 10);
+  const tier = String(formData.get("tier") ?? "free") === "premium" ? "premium" : "free";
   if (!name || !Number.isFinite(klass)) return;
-  createSession(name, klass);
+  createSession(name, klass, tier);
   redirect("/home");
 }
 
@@ -132,6 +134,26 @@ export async function repostAction(postId: string): Promise<{ status: "ok"; post
   return { status: "ok", postId: res.postId };
 }
 
+// ── Trending topic summaries (Explore card, spec §9) ─────────────────────────
+
+export type TopicVM = { title: string; summary: string; posts: PostCardVM[] };
+export type TopicsResponse = { status: "ok"; topics: TopicVM[]; fallback: boolean; provider: string };
+
+/**
+ * Summarize the trending posts into up to 5 topics via the LLM (server-side).
+ * Each topic resolves to the real posts it grouped, so the UI can open them.
+ * No key / call failure → deterministic demo topics (`fallback: true`).
+ */
+export async function summarizeTrendingAction(): Promise<TopicsResponse> {
+  const sid = requireSession();
+  const candidates = listSearchCorpus(config.llmCandidateRows);
+  const res = await summarizeTopics(candidates);
+  const topics: TopicVM[] = res.topics
+    .map((t) => ({ title: t.title, summary: t.summary, posts: searchResultsView(sid, t.postIds) }))
+    .filter((t) => t.posts.length > 0);
+  return { status: "ok", topics, fallback: res.fallback, provider: res.provider };
+}
+
 export type SearchResponse =
   | { status: "search_cap"; used: number; cap: number }
   | { status: "token_exhausted"; budget: number }
@@ -158,11 +180,12 @@ export async function searchAction(query: string): Promise<SearchResponse> {
   const q = query.trim();
   if (!q) return { status: "empty" };
 
+  const premium = isPremium(sid);
   const used = searchesUsed(sid);
-  if (used >= publicCaps.searchWeeklyCap)
+  if (!premium && used >= publicCaps.searchWeeklyCap)
     return { status: "search_cap", used, cap: publicCaps.searchWeeklyCap };
 
-  if (!hasTokenBudget(sid))
+  if (!premium && !hasTokenBudget(sid))
     return { status: "token_exhausted", budget: config.llmSessionTokenBudget };
 
   const candidates = listSearchCorpus(config.llmCandidateRows);

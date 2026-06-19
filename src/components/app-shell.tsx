@@ -41,6 +41,7 @@ export type ShellSession = {
   classTag: string;
   tag: string;
   initials: string;
+  premium: boolean;
 };
 export type ShellCaps = { bookmarkCap: number; joinGroupCap: number; searchWeeklyCap: number; postWeeklyCap: number };
 export type ShellGroup = { id: string; name: string; topic: string | null; joinedCount: number };
@@ -146,7 +147,7 @@ export function AppShell({
     startTransition(async () => {
       const res = await joinGroupAction(g.id);
       close();
-      if (res.ok) toast(`Joined ${g.name}. ${res.count} of ${caps.joinGroupCap} groups joined.`);
+      if (res.ok) toast(session.premium ? `Joined ${g.name}.` : `Joined ${g.name}. ${res.count} of ${caps.joinGroupCap} groups joined.`);
       else if (res.reason === "at_cap")
         setModal({
           kind: "upsell",
@@ -192,7 +193,7 @@ export function AppShell({
               )}
               {modal.kind === "deadend" && <DeadEnd onClose={close} />}
               {modal.kind === "joinconfirm" && (
-                <JoinConfirm group={modal.group} cap={caps.joinGroupCap} onCancel={close} onConfirm={() => confirmJoin(modal.group)} />
+                <JoinConfirm group={modal.group} cap={caps.joinGroupCap} premium={session.premium} onCancel={close} onConfirm={() => confirmJoin(modal.group)} />
               )}
               {modal.kind === "bookmarkcap" && (
                 <BookmarkCap cap={caps.bookmarkCap} bookmarks={bookmarks} onRemove={removeBm} onClose={close} />
@@ -251,7 +252,10 @@ function Sidebar({ session, go, onClose, deadEnd }: { session: ShellSession; go:
           <Disc initials={session.initials} size={48} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ll-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.tag}</div>
-            <div style={{ fontSize: 12, color: "var(--ll-on-surface-variant)" }}>{session.classTag}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+              <span style={{ fontSize: 12, color: "var(--ll-on-surface-variant)" }}>{session.classTag}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", padding: "2px 7px", borderRadius: 999, background: session.premium ? "var(--ll-secondary)" : "var(--ll-surface-container-high)", color: session.premium ? "#fff" : "var(--ll-on-surface-variant)" }}>{session.premium ? "Premium ✦" : "Free trial"}</span>
+            </div>
           </div>
         </div>
         <DrawerItem icon={<UserIcon size={20} />} label="Profile" onClick={() => go("/profile/me")} />
@@ -311,12 +315,16 @@ function DeadEnd({ onClose }: { onClose: () => void }) {
   );
 }
 
-function JoinConfirm({ group, cap, onCancel, onConfirm }: { group: ShellGroup; cap: number; onCancel: () => void; onConfirm: () => void }) {
+function JoinConfirm({ group, cap, premium, onCancel, onConfirm }: { group: ShellGroup; cap: number; premium: boolean; onCancel: () => void; onConfirm: () => void }) {
   return (
     <SheetBody>
       <SheetTitle>Join {group.name}?</SheetTitle>
-      <SheetText>On the free trial you can join up to {cap} groups, and you can't leave a group once joined.</SheetText>
-      <p style={{ margin: "0 0 14px", fontSize: 12, color: "var(--ll-on-surface-variant)" }}>{group.joinedCount} of {cap} groups joined.</p>
+      <SheetText>
+        {premium
+          ? "You're on Premium — join as many groups as you like. (Leaving a group isn't part of this demo.)"
+          : `On the free trial you can join up to ${cap} groups, and you can't leave a group once joined.`}
+      </SheetText>
+      {!premium && <p style={{ margin: "0 0 14px", fontSize: 12, color: "var(--ll-on-surface-variant)" }}>{group.joinedCount} of {cap} groups joined.</p>}
       <PrimaryBtn onClick={onConfirm}>Join group</PrimaryBtn>
       <GhostBtn onClick={onCancel}>Cancel</GhostBtn>
     </SheetBody>

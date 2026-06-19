@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /** S8 Explore — AI search (server-side LLM ranking), trending promo, trending posts. */
 export default function ExplorePage() {
   const session = getCurrentSession()!;
-  const { trending, used, cap } = exploreView(session.id);
+  const { trending, used, cap, premium } = exploreView(session.id);
 
   return (
     <Screen>
@@ -26,7 +26,7 @@ export default function ExplorePage() {
       </PinnedHeader>
 
       <ScrollBody style={{ padding: "14px 14px 96px", display: "flex", flexDirection: "column", gap: 16 }}>
-        <ExploreClient trending={trending} used={used} cap={cap} />
+        <ExploreClient trending={trending} used={used} cap={cap} premium={premium} />
       </ScrollBody>
     </Screen>
   );

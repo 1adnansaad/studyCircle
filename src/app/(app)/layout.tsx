@@ -21,6 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         classTag: classTag(session.class),
         tag: ownTag(session.name),
         initials: initials(session.name),
+        premium: session.tier === "premium",
       }}
       caps={{
         bookmarkCap: publicCaps.bookmarkCap,

@@ -28,6 +28,7 @@ import {
   displayedFollowerCount,
   searchesUsed,
   postsUsed,
+  isPremium,
   type PostRow,
   type GroupRow,
 } from "./repo";
@@ -177,6 +178,7 @@ export function groupsTabView(sessionId: string) {
     suggested: all.filter((g) => !g.joined),
     joinedCount: joinedGroupCount(sessionId),
     cap: publicCaps.joinGroupCap,
+    premium: isPremium(sessionId),
   };
 }
 
@@ -242,6 +244,7 @@ export function bookmarksView(sessionId: string) {
     posts: listBookmarkedPosts(sessionId).map((p) => postToVM(p, bm)),
     count: bookmarkCount(sessionId),
     cap: publicCaps.bookmarkCap,
+    premium: isPremium(sessionId),
   };
 }
 
@@ -265,6 +268,7 @@ export function exploreView(sessionId: string) {
     trending,
     used: searchesUsed(sessionId),
     cap: publicCaps.searchWeeklyCap,
+    premium: isPremium(sessionId),
   };
 }
 
@@ -283,7 +287,7 @@ export function lessonView(lessonId: string) {
 
 /** Weekly post-budget meter for the composer (post/comment/repost/quote share it). */
 export function postMeter(sessionId: string) {
-  return { used: postsUsed(sessionId), cap: publicCaps.postWeeklyCap };
+  return { used: postsUsed(sessionId), cap: publicCaps.postWeeklyCap, premium: isPremium(sessionId) };
 }
 
 export function composerLessons() {

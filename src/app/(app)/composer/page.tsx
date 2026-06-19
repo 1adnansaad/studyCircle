@@ -20,6 +20,7 @@ export default function ComposerPage() {
         lessons={composerLessons()}
         used={meter.used}
         cap={meter.cap}
+        premium={meter.premium}
       />
     </Screen>
   );

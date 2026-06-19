@@ -119,6 +119,113 @@ async function callAnthropic(prompt: string): Promise<{ text: string; tokens: nu
   return { text, tokens };
 }
 
+// ── Trending topic summaries (the Explore "Trending now" card) ────────────────
+
+export type Topic = { title: string; summary: string; postIds: string[] };
+
+export type TopicsResult = {
+  topics: Topic[];
+  provider: "gemini" | "anthropic" | "local";
+  model: string;
+  fallback: boolean; // true = demo stand-in topics (no key / call failed)
+  tokensUsed: number;
+};
+
+const MAX_TOPICS = 5;
+
+function buildTopicsPrompt(candidates: CorpusRow[]): string {
+  const list = candidates
+    .map((c) => `- id=${c.post_id} | ${c.subject ? `[${c.subject}] ` : ""}${c.search_text.replace(/\s+/g, " ").slice(0, 200)}`)
+    .join("\n");
+  return [
+    `You curate "Trending now" for a Bangla edtech study feed (classes 6–12).`,
+    `Cluster these posts into up to ${MAX_TOPICS} distinct trending TOPICS, each grouping posts that share a subject/theme.`,
+    ``,
+    `Posts:`,
+    list,
+    ``,
+    `Return ONLY JSON: {"topics":[{"title":"<short topic, ≤4 words>","summary":"<one sentence on what students are discussing>","ids":["<post_id>",...]}]}`,
+    `Each topic must list 1+ ids drawn ONLY from the posts above; no post in two topics; at most ${MAX_TOPICS} topics. No prose, no markdown.`,
+  ].join("\n");
+}
+
+function parseTopics(text: string, valid: Set<string>): Topic[] {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text).topics;
+  } catch {
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) return [];
+    try {
+      raw = JSON.parse(m[0]).topics;
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const topics: Topic[] = [];
+  for (const t of raw as Array<Record<string, unknown>>) {
+    const title = typeof t.title === "string" ? t.title.trim() : "";
+    const summary = typeof t.summary === "string" ? t.summary.trim() : "";
+    const ids = Array.isArray(t.ids)
+      ? (t.ids as unknown[]).filter((id): id is string => typeof id === "string" && valid.has(id) && !seen.has(id))
+      : [];
+    ids.forEach((id) => seen.add(id));
+    if (title && ids.length) topics.push({ title, summary, postIds: ids });
+    if (topics.length >= MAX_TOPICS) break;
+  }
+  return topics;
+}
+
+/**
+ * Deterministic stand-in topics — used when no API key is set or the call fails.
+ * Groups candidates by subject so each topic still maps to real posts the user
+ * can open. Title = subject (or "Topic N"); summary is generic.
+ */
+function fallbackTopics(candidates: CorpusRow[]): Topic[] {
+  const bySubject = new Map<string, string[]>();
+  for (const c of candidates) {
+    const key = (c.subject ?? "").trim() || "StudyCircle";
+    const arr = bySubject.get(key) ?? [];
+    if (arr.length < 6) arr.push(c.post_id);
+    bySubject.set(key, arr);
+  }
+  return [...bySubject.entries()]
+    .slice(0, MAX_TOPICS)
+    .map(([subject, postIds]) => ({
+      title: subject,
+      summary: `What students are posting about ${subject} right now.`,
+      postIds,
+    }));
+}
+
+export async function summarizeTopics(candidates: CorpusRow[]): Promise<TopicsResult> {
+  const valid = new Set(candidates.map((c) => c.post_id));
+  const provider = config.llmProvider;
+  const key = provider === "anthropic" ? config.anthropicApiKey : config.geminiApiKey;
+
+  if (key && candidates.length) {
+    const prompt = buildTopicsPrompt(candidates);
+    try {
+      const { text, tokens } = provider === "anthropic" ? await callAnthropic(prompt) : await callGemini(prompt);
+      const topics = parseTopics(text, valid);
+      if (topics.length)
+        return {
+          topics,
+          provider,
+          model: provider === "anthropic" ? config.anthropicModel : config.geminiModel,
+          fallback: false,
+          tokensUsed: tokens || estimateTokens(prompt, text),
+        };
+    } catch {
+      // fall through to demo topics
+    }
+  }
+
+  return { topics: fallbackTopics(candidates), provider: "local", model: "demo", fallback: true, tokensUsed: 0 };
+}
+
 export async function rankSearch(query: string, candidates: CorpusRow[]): Promise<RankResult> {
   const valid = new Set(candidates.map((c) => c.post_id));
   const prompt = buildPrompt(query, candidates);

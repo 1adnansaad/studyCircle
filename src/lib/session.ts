@@ -11,32 +11,36 @@
 import { randomUUID } from "node:crypto";
 import { getDb } from "./db";
 
+export type Tier = "free" | "premium";
+
 export type Session = {
   id: string;
   name: string;
   class: number;
+  tier: Tier;
   createdAt: string;
 };
 
-type SessionRow = { id: string; name: string; class: number; created_at: string };
+type SessionRow = { id: string; name: string; class: number; tier: string; created_at: string };
 
 function toSession(row: SessionRow): Session {
-  return { id: row.id, name: row.name, class: row.class, createdAt: row.created_at };
+  return { id: row.id, name: row.name, class: row.class, tier: row.tier === "premium" ? "premium" : "free", createdAt: row.created_at };
 }
 
 /** The single active session, or null if logged out. */
 export function getCurrentSession(): Session | null {
   const row = getDb()
-    .prepare("SELECT id, name, class, created_at FROM session LIMIT 1")
+    .prepare("SELECT id, name, class, tier, created_at FROM session LIMIT 1")
     .get() as SessionRow | undefined;
   return row ? toSession(row) : null;
 }
 
 /**
- * Create the demo session from the login form (Name + Class). Single active
- * session, so any existing session is logged out first (clean slate).
+ * Create the demo session from the login form (Name + Class + tier). Single
+ * active session, so any existing session is logged out first (clean slate).
+ * `premium` removes every freemium cap (§1); `free` keeps them.
  */
-export function createSession(name: string, klass: number): Session {
+export function createSession(name: string, klass: number, tier: Tier = "free"): Session {
   const db = getDb();
   const id = randomUUID();
   const createdAt = new Date().toISOString();
@@ -44,12 +48,12 @@ export function createSession(name: string, klass: number): Session {
   const tx = db.transaction(() => {
     db.prepare("DELETE FROM session").run(); // cascades away any prior mutable state
     db.prepare(
-      "INSERT INTO session (id, name, class, created_at) VALUES (?, ?, ?, ?)"
-    ).run(id, name, klass, createdAt);
+      "INSERT INTO session (id, name, class, tier, created_at) VALUES (?, ?, ?, ?, ?)"
+    ).run(id, name, klass, tier, createdAt);
   });
   tx();
 
-  return { id, name, class: klass, createdAt };
+  return { id, name, class: klass, tier, createdAt };
 }
 
 /** Logout = the only reset. Clears the mutable layer via cascade; world stays. */

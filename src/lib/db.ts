@@ -71,6 +71,7 @@ function maybeCopyTemplate(dbPath: string): boolean {
 function ensureInitialized(db: DB, fromTemplate: boolean): void {
   db.exec(SCHEMA_SQL);
   migrateUserAuthoredContent(db);
+  migrateSessionTier(db);
   const setMeta = db.prepare(
     "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
   );
@@ -150,6 +151,14 @@ function migrateUserAuthoredContent(db: DB): void {
   })();
   db.pragma("foreign_keys = ON");
   console.log("[db] migrated posts/comments for user-authored content");
+}
+
+/** Idempotent: add `session.tier` (free|premium) to DBs created before tiers. */
+function migrateSessionTier(db: DB): void {
+  const cols = db.prepare("PRAGMA table_info(session)").all() as { name: string }[];
+  if (cols.some((c) => c.name === "tier")) return;
+  db.exec("ALTER TABLE session ADD COLUMN tier TEXT NOT NULL DEFAULT 'free'");
+  console.log("[db] migrated session for free/premium tiers");
 }
 
 export function getDb(): DB {

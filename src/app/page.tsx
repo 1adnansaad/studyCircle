@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/lib/session";
 import { loginAction } from "./actions";
+import { TierChoice } from "@/components/tier-choice";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ export default function LoginPage() {
                 </select>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ll-on-surface-variant)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}><path d="m6 9 6 6 6-6" /></svg>
               </div>
+              <TierChoice />
               <button type="submit" style={cta}>Continue</button>
             </form>
           </div>

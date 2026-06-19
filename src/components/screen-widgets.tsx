@@ -39,11 +39,21 @@ function Tab({ active, onClick, children }: { active: boolean; onClick: () => vo
 }
 
 // ── Group meter chip (Groups tab + bookmarks) ─────────────────────────────────
-export function MeterChip({ text, title, body }: { text: string; title: string; body: string }) {
+export function MeterChip({ text, title, body, premium }: { text: string; title: string; body: string; premium?: boolean }) {
   const { chipInfo } = useApp();
+  const label = premium ? "Unlimited ✦" : text;
   return (
-    <button onClick={() => chipInfo({ title, body, showCta: true })} style={{ display: "inline-flex", alignItems: "center", gap: 5, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 999, background: "var(--ll-secondary-tint)", color: "var(--ll-secondary)" }}>
-      <InfoIcon size={12} />{text}
+    <button
+      onClick={() =>
+        chipInfo(
+          premium
+            ? { title: "Premium — no limits", body: "You're on the Premium demo account, so this cap doesn't apply. Everything is unlimited.", showCta: false }
+            : { title, body, showCta: true }
+        )
+      }
+      style={{ display: "inline-flex", alignItems: "center", gap: 5, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 999, background: "var(--ll-secondary-tint)", color: "var(--ll-secondary)" }}
+    >
+      <InfoIcon size={12} />{label}
     </button>
   );
 }
@@ -138,7 +148,7 @@ export function GroupComposeButton() {
 
 // ── Composer (S9) ─────────────────────────────────────────────────────────────
 const PRIVACY = ["Public", "Followers", "Only me"] as const;
-export function Composer({ authorTag, classTag, lessons, used, cap }: { authorTag: string; classTag: string; lessons: { id: string; title: string; subject: string | null; klass: string | null; duration: string | null }[]; used: number; cap: number }) {
+export function Composer({ authorTag, classTag, lessons, used, cap, premium }: { authorTag: string; classTag: string; lessons: { id: string; title: string; subject: string | null; klass: string | null; duration: string | null }[]; used: number; cap: number; premium?: boolean }) {
   const { postCapUpsell, deadEnd, toast } = useApp();
   const router = useRouter();
   const [text, setText] = useState("");
@@ -165,6 +175,7 @@ export function Composer({ authorTag, classTag, lessons, used, cap }: { authorTa
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 16px 0", display: "flex", flexDirection: "column" }} className="sc-scroll">
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <MeterChip
+            premium={premium}
             text={`${used} / ${cap}`}
             title="Free-trial weekly posts"
             body={`On the free trial you get ${cap} posts a week — comments, reposts, and quotes count too, and the count doesn't roll back. Subscribe to Shikho Premium to post without limits.`}

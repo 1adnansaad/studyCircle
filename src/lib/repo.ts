@@ -169,6 +169,16 @@ export function getGroup(id: string): GroupRow | undefined {
     | undefined;
 }
 
+// ── Account tier (§1) ────────────────────────────────────────────────────────
+
+/** Premium sessions bypass every freemium cap (bookmark/join/search/post). */
+export function isPremium(sessionId: string): boolean {
+  const row = getDb().prepare("SELECT tier FROM session WHERE id = ?").get(sessionId) as
+    | { tier: string }
+    | undefined;
+  return row?.tier === "premium";
+}
+
 // ── Derived follower / following counts (§3) ─────────────────────────────────
 
 /** displayed = follower_count_seed + (1 if this session follows the profile). */
@@ -219,7 +229,7 @@ export type BookmarkResult =
 export function addBookmark(sessionId: string, postId: string): BookmarkResult {
   const db = getDb();
   if (isBookmarked(sessionId, postId)) return { ok: true, bookmarked: true, count: bookmarkCount(sessionId) };
-  if (bookmarkCount(sessionId) >= config.bookmarkCap)
+  if (!isPremium(sessionId) && bookmarkCount(sessionId) >= config.bookmarkCap)
     return { ok: false, reason: "at_cap", count: bookmarkCount(sessionId) };
   db.prepare("INSERT INTO bookmarks (session_id, post_id, created_at) VALUES (?, ?, ?)").run(
     sessionId,
@@ -268,7 +278,7 @@ export type JoinResult =
 export function joinGroup(sessionId: string, groupId: string): JoinResult {
   if (isJoined(sessionId, groupId))
     return { ok: false, reason: "already_joined", count: joinedGroupCount(sessionId) };
-  if (joinedGroupCount(sessionId) >= config.joinGroupCap)
+  if (!isPremium(sessionId) && joinedGroupCount(sessionId) >= config.joinGroupCap)
     return { ok: false, reason: "at_cap", count: joinedGroupCount(sessionId) };
   getDb()
     .prepare("INSERT INTO joined_groups (session_id, group_id, created_at) VALUES (?, ?, ?)")
@@ -381,7 +391,7 @@ export type SearchResult = { ok: true; used: number } | { ok: false; reason: "at
 export function recordSearch(sessionId: string): SearchResult {
   const week = currentWeekStart();
   const used = searchesUsed(sessionId);
-  if (used >= config.searchWeeklyCap) return { ok: false, reason: "at_cap", used };
+  if (!isPremium(sessionId) && used >= config.searchWeeklyCap) return { ok: false, reason: "at_cap", used };
   getDb()
     .prepare(
       `INSERT INTO search_usage (session_id, searches_used, week_start) VALUES (?, 1, ?)
@@ -419,7 +429,7 @@ export function createPost(
   const db = getDb();
   return db.transaction((): CreatePostResult => {
     const used = postsUsed(sessionId);
-    if (used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
+    if (!isPremium(sessionId) && used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
     const id = randomUUID();
     db.prepare(
       `INSERT INTO posts (id, author_profile_id, body, image_path, privacy, group_id,
@@ -443,7 +453,7 @@ export function createRepost(sessionId: string, originalPostId: string, quoteBod
     const original = getPost(originalPostId);
     if (!original) return { ok: false, reason: "at_cap", used: postsUsed(sessionId) }; // missing original: treat as no-op block
     const used = postsUsed(sessionId);
-    if (used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
+    if (!isPremium(sessionId) && used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
     const id = randomUUID();
     db.prepare(
       `INSERT INTO posts (id, author_profile_id, body, image_path, privacy, group_id,
@@ -465,7 +475,7 @@ export function createComment(
   const db = getDb();
   return db.transaction((): { ok: true; used: number } | { ok: false; reason: "at_cap"; used: number } => {
     const used = postsUsed(sessionId);
-    if (used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
+    if (!isPremium(sessionId) && used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
     db.prepare(
       `INSERT INTO comments (id, post_id, author_profile_id, parent_comment_id, body, session_id, created_at)
        VALUES (?, ?, NULL, ?, ?, ?, ?)`

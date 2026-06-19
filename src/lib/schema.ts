@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS session (
   id         TEXT PRIMARY KEY,
   name       TEXT NOT NULL,
   class      INTEGER NOT NULL,
+  tier       TEXT NOT NULL DEFAULT 'free',  -- 'free' (capped) | 'premium' (uncapped)
   created_at TEXT NOT NULL
 );
 
