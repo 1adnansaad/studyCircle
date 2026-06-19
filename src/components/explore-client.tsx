@@ -7,7 +7,8 @@ import type { TopicVM } from "@/app/actions";
 import { useApp } from "./app-shell";
 import { PostCard } from "./post-card";
 import { searchAction, summarizeTrendingAction } from "@/app/actions";
-import { SparkleIcon, ChevronUp, ChevronRight } from "./icons";
+import { SparkleIcon, ChevronUp, ChevronRight, LockIcon } from "./icons";
+import { DeadButton } from "./screen-widgets";
 
 const MAX = 120;
 
@@ -97,45 +98,65 @@ export function ExploreClient({ trending, used, cap, premium }: { trending: Post
         </div>
       )}
 
-      {/* Trending now — AI topic summaries */}
-      <div style={{ background: "var(--ll-gradient-deep)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-deep)", padding: 18, color: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <SparkleIcon size={16} stroke="#fff" />
-          <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 17 }}>Trending now</span>
+      {/* Trending now — locked promo for free users; AI topic summaries for premium */}
+      {!premium ? (
+        <div style={{ background: "var(--ll-gradient-deep)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-deep)", padding: 18, color: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", background: "rgba(255,255,255,.18)", padding: "4px 10px", borderRadius: 999 }}>Premium</span>
+            <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 17 }}>Trending now</span>
+          </div>
+          <p style={{ margin: "10px 0 12px", fontSize: 13, lineHeight: 1.5, color: "rgba(255,255,255,.85)" }}>See what every class is studying right now — the hottest topics of the last hour, day, and week.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {["তাপগতিবিদ্যা", "জৈব বিক্রিয়া", "ক্যালকুলাস"].map((t, i) => (
+              <div key={t} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,.12)", borderRadius: 12, padding: "10px 12px" }}>
+                <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 15, opacity: 0.7 }}>#{i + 1}</span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, filter: "blur(3px)" }}>{t}</span>
+                <LockIcon size={16} />
+              </div>
+            ))}
+          </div>
+          <DeadButton style={{ width: "100%", marginTop: 14, border: "none", cursor: "pointer", background: "#fff", color: "var(--ll-primary)", fontWeight: 700, fontSize: 15, padding: 13, borderRadius: 999 }}>Unlock trending topics</DeadButton>
         </div>
-        <p style={{ margin: "10px 0 12px", fontSize: 13, lineHeight: 1.5, color: "rgba(255,255,255,.85)" }}>
-          {topics === null
-            ? "Let Shikho AI read the feed and group what your class is studying into a few trending topics."
-            : topicsFallback
-            ? "LLM unavailable — showing demo topics. Tap one to see its posts."
-            : "Tap a topic to see the posts it summarized."}
-        </p>
+      ) : (
+        <div style={{ background: "var(--ll-gradient-deep)", borderRadius: "var(--ll-radius-lg)", boxShadow: "var(--ll-shadow-deep)", padding: 18, color: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <SparkleIcon size={16} stroke="#fff" />
+            <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 17 }}>Trending now</span>
+          </div>
+          <p style={{ margin: "10px 0 12px", fontSize: 13, lineHeight: 1.5, color: "rgba(255,255,255,.85)" }}>
+            {topics === null
+              ? "Let Shikho AI read the feed and group what your class is studying into a few trending topics."
+              : topicsFallback
+              ? "LLM unavailable — showing demo topics. Tap one to see its posts."
+              : "Tap a topic to see the posts it summarized."}
+          </p>
 
-        {topics === null ? (
-          <button onClick={summarize} disabled={topicsPending} style={ctaBtn}>
-            <SparkleIcon size={16} stroke="var(--ll-primary)" />
-            {topicsPending ? "Summarizing…" : "Summarize trending topics"}
-          </button>
-        ) : (
-          <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {topics.map((t, i) => (
-                <button key={t.title + i} onClick={() => openTopic(t)} style={topicRow}>
-                  <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 15, opacity: 0.7 }}>#{i + 1}</span>
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: "block", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</span>
-                    <span style={{ display: "block", fontSize: 12, color: "rgba(255,255,255,.8)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.summary || `${t.posts.length} post${t.posts.length === 1 ? "" : "s"}`}</span>
-                  </span>
-                  <ChevronRight size={16} />
-                </button>
-              ))}
-            </div>
-            <button onClick={summarize} disabled={topicsPending} style={{ ...ctaBtn, background: "rgba(255,255,255,.16)", color: "#fff", marginTop: 12 }}>
-              <SparkleIcon size={15} stroke="#fff" />{topicsPending ? "Summarizing…" : "Re-summarize"}
+          {topics === null ? (
+            <button onClick={summarize} disabled={topicsPending} style={ctaBtn}>
+              <SparkleIcon size={16} stroke="var(--ll-primary)" />
+              {topicsPending ? "Summarizing…" : "Summarize trending topics"}
             </button>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {topics.map((t, i) => (
+                  <button key={t.title + i} onClick={() => openTopic(t)} style={topicRow}>
+                    <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 15, opacity: 0.7 }}>#{i + 1}</span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: "block", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</span>
+                      <span style={{ display: "block", fontSize: 12, color: "rgba(255,255,255,.8)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.summary || `${t.posts.length} post${t.posts.length === 1 ? "" : "s"}`}</span>
+                    </span>
+                    <ChevronRight size={16} />
+                  </button>
+                ))}
+              </div>
+              <button onClick={summarize} disabled={topicsPending} style={{ ...ctaBtn, background: "rgba(255,255,255,.16)", color: "#fff", marginTop: 12 }}>
+                <SparkleIcon size={15} stroke="#fff" />{topicsPending ? "Summarizing…" : "Re-summarize"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Results, or default trending posts */}
       {results !== null ? (

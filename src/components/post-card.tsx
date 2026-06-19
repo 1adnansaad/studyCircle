@@ -61,7 +61,7 @@ export function NameLink({ tag, profileId }: { tag: string; profileId: string })
 
 export function PostCard({ post }: { post: PostCardVM }) {
   const router = useRouter();
-  const { upsell, bookmarkAtCap, toast, caps, postCapUpsell } = useApp();
+  const { upsell, bookmarkAtCap, toast, caps, postCapUpsell, session } = useApp();
   const [, startTransition] = useTransition();
 
   function bookmark() {
@@ -129,7 +129,7 @@ export function PostCard({ post }: { post: PostCardVM }) {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
         <Action onClick={() => router.push(`/post/${post.id}`)} label={post.comments}><CommentIcon size={19} /></Action>
-        <Action onClick={upsell} label={post.likes}><HeartIcon size={19} /></Action>
+        <Action onClick={() => (session.premium ? toast("Liked.") : upsell())} label={post.likes}><HeartIcon size={19} /></Action>
         <Action onClick={() => repost(false)} label={post.reposts}><RepostIcon size={19} /></Action>
         <Action onClick={() => repost(true)}><QuoteIcon size={19} /></Action>
         <Action onClick={() => toast("Shareable link copied to clipboard!")}><ShareIcon size={19} /></Action>

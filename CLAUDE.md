@@ -87,12 +87,15 @@ This build follows the **build spec**:
   budget. Every meter takes a `premium` flag (from the meter views) and renders
   **"Unlimited ✦"** (`MeterChip`, composer, explore chip); JoinConfirm + sidebar
   badge are tier-aware. Login control: `src/components/tier-choice.tsx`.
-- **Trending now = AI topic summaries (Explore):** the card's CTA calls
-  `summarizeTrendingAction` → `summarizeTopics` (`llm.ts`) to cluster the corpus
-  into ≤5 topics; tapping a topic opens its posts (reuses the search-results
-  view). **No LLM key / failure → `fallbackTopics`** (grouped by subject),
-  labeled "LLM unavailable — showing demo topics." Owns its state in
+- **Trending now card (Explore):** **Free** users see the original locked promo
+  (blurred topics + lock + "Unlock trending topics" dead-end). **Premium** users
+  get the AI card: CTA → `summarizeTrendingAction` → `summarizeTopics` (`llm.ts`)
+  clusters the corpus into ≤5 topics; tapping a topic opens its posts (reuses the
+  search-results view). **No LLM key / failure → `fallbackTopics`** (grouped by
+  subject), labeled "LLM unavailable — showing demo topics." Owns its state in
   `explore-client.tsx`; independent of the weekly-search counter.
+- **Like** → upsell for **Free**, a "Liked." toast for **Premium** (no
+  persistence either way; likes are seed-only).
 - **Allowed writes** (work + persist): **Bookmark** (≤cap), **Join group** (≤cap, no
   leaving), **Search** (≤cap/week), **Follow/Unfollow** (uncapped), **post budget**
   (≤cap/week, above).
