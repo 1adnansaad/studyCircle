@@ -91,21 +91,101 @@ npm run start        # serve the build → http://localhost:3000
 PORT=8080 npm run start
 ```
 
-### 3. Docker — on the `docker` branch
+### 3. Run with Docker
 
-**To run StudyCircle in Docker, check out the [`docker`](../../tree/docker) branch.**
-The Dockerfile, `docker-compose.yml`, and Docker-specific instructions (including how
-to pass environment variables to the container) all live there — `master` stays
-Docker-free.
+You only need [Docker](https://docs.docker.com/get-docker/) installed — no Node, no
+`npm install`. Works the same on macOS, Linux, and Windows.
+
+**One-time setup** — make your own editable runtime env file:
 
 ```bash
-git fetch origin
-git checkout docker      # or: git clone -b docker <repo-url>
+cp .env.docker.example .env.docker     # then edit .env.docker if you like
 ```
 
-Then follow the **Run with Docker** section in that branch's README. The app is
-Docker-ready by design — all persistent state lives under `./data` (mount it as a
-volume to persist the SQLite DB across restarts) and all config is env-only.
+**Build the image** (compiles the native `better-sqlite3` + runs `next build`; takes
+a few minutes the first time, then it's cached):
+
+```bash
+docker build -t studycircle .
+```
+
+**Run it:**
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  --env-file .env.docker \
+  -v studycircle-data:/app/data \
+  --name studycircle \
+  studycircle
+```
+
+Open **http://localhost:3000**. Stop with `Ctrl-C` (or `docker stop studycircle`).
+
+What each flag does:
+
+| Flag | Meaning |
+|---|---|
+| `-p 3000:3000` | Map **host** port → **container** port. Left number is the one you open in the browser. |
+| `--env-file .env.docker` | Inject your runtime config. **This is how you control the app's behavior on each run.** |
+| `-v studycircle-data:/app/data` | A named **volume** holding the SQLite DB, so data survives restarts. |
+| `--rm` | Remove the *container* when it stops. Safe — your data lives in the volume, not the container. |
+
+#### Prefer one command? Use Compose
+
+[`docker-compose.yml`](docker-compose.yml) bundles the same port, volume, and env-file:
+
+```bash
+docker compose up --build      # build (if needed) + run
+docker compose down            # stop (keeps the data volume)
+docker compose down -v         # stop AND wipe the data volume (fresh seed next run)
+```
+
+#### Setting environment variables — restart vs. rebuild
+
+Almost every variable (see the [table below](#environment-variables)) is read at
+**runtime**, so changing the app is a fast loop — **no rebuild**:
+
+```bash
+# 1. edit .env.docker  (e.g. set BOOKMARK_CAP=3, add an API key, flip AI_DEBUG=1)
+# 2. recreate the container so it re-reads the file:
+docker rm -f studycircle
+docker run --rm -p 3000:3000 --env-file .env.docker \
+  -v studycircle-data:/app/data --name studycircle studycircle
+# (with Compose: `docker compose up -d` recreates it for you)
+```
+
+> ⚠️ `docker restart` reuses the container's *original* env — it will **not** pick up
+> an edited `.env.docker`. Recreate the container (`rm` + `run`, or `compose up`) to
+> apply env changes.
+
+The **one** exception is `NEXT_PUBLIC_NAV_ICON_EXT` (the logo file extension). Anything
+named `NEXT_PUBLIC_*` is baked into the JavaScript at **build** time, so changing it
+needs a **rebuild**, not just a restart:
+
+```bash
+docker build --build-arg NEXT_PUBLIC_NAV_ICON_EXT=svg -t studycircle .
+```
+
+#### Secrets
+
+API keys (`GEMINI_API_KEY` / `ANTHROPIC_API_KEY`) go **only** in your local
+`.env.docker` and reach the container through `--env-file`. They are never baked into
+the image and never committed — `.env.docker` is gitignored; only the key-less
+`.env.docker.example` is in the repo. The app runs fine without any key (Explore falls
+back to keyword search + demo trending topics).
+
+#### Where the data lives & how seeding works
+
+- The live database is the named volume **`studycircle-data`** (mounted at `/app/data`).
+  Inspect it with `docker volume inspect studycircle-data`; delete it with
+  `docker volume rm studycircle-data` (or `docker compose down -v`) for a clean slate.
+- The seed **template** (`enhanced-seed.db`) is baked into the image at `/app/seed`,
+  **outside** the volume — so the volume can't shadow it. On first run it's copied into
+  the empty volume, giving the full enhanced world (110 profiles, 20 groups, 234 posts).
+  On later runs the existing `app.db` is kept untouched.
+- `DB_PATH` and `SEED_DB_PATH` are preset correctly inside the image, which is why
+  they're intentionally **absent** from `.env.docker.example` — leave them alone.
 
 ---
 
