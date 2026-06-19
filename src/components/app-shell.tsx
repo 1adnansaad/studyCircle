@@ -19,12 +19,6 @@ import {
   removeBookmarkAction,
 } from "@/app/actions";
 import {
-  SearchIcon,
-  MethodIcon,
-  InboxIcon,
-  SparkleIcon,
-  HouseIcon,
-  BookIcon,
   UserIcon,
   UsersIcon,
   BookmarkIcon,
@@ -224,16 +218,16 @@ function BottomNav({ pathname, go, deadEnd, hidden }: { pathname: string; go: (p
   const toggleTarget = onHome ? "/studycircle" : "/home";
   return (
     <nav style={{ ...nav, transform: hidden ? "translateY(110%)" : "translateY(0)", transition: "transform .25s ease" }}>
-      <NavBtn label="Search" active={pathname === "/explore"} onClick={() => go("/explore")}><SearchIcon /></NavBtn>
-      <NavBtn label="পদ্ধতি" onClick={deadEnd}><MethodIcon /></NavBtn>
+      <NavBtn label="Search" active={pathname === "/explore"} onClick={() => go("/explore")}><img src="/nav-icons/search.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
+      <NavBtn label="পদ্ধতি" onClick={deadEnd}><img src="/nav-icons/method.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
       <button aria-label="Switch Home / StudyCircle" onClick={() => go(toggleTarget)} style={toggleBtn}>
         <span style={toggleTrack}>
-          <span style={onHome ? toggleSegActive : toggleSeg}><HouseIcon size={18} stroke={onHome ? "#fff" : "var(--ll-outline)"} /></span>
-          <span style={!onHome ? toggleSegActive : toggleSeg}><BookIcon size={18} stroke={!onHome ? "#fff" : "var(--ll-outline)"} /></span>
+          <span style={onHome ? toggleSegActive : toggleSeg}><img src="/nav-icons/home.png" alt="" style={{ height: 20, width: "auto", objectFit: "contain", opacity: onHome ? 1 : 0.45 }} /></span>
+          <span style={!onHome ? toggleSegActive : toggleSeg}><img src="/nav-icons/studycircle.png" alt="" style={{ height: 20, width: "auto", objectFit: "contain", opacity: !onHome ? 1 : 0.45 }} /></span>
         </span>
       </button>
-      <NavBtn label="ইনবক্স" onClick={deadEnd}><InboxIcon /></NavBtn>
-      <NavBtn label="শিখো AI" onClick={deadEnd}><SparkleIcon /></NavBtn>
+      <NavBtn label="ইনবক্স" onClick={deadEnd}><img src="/nav-icons/inbox.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
+      <NavBtn label="শিখো AI" onClick={deadEnd}><img src="/nav-icons/shikho-ai.png" alt="" style={{ height: NAV_ICON_H, width: "auto", objectFit: "contain" }} /></NavBtn>
     </nav>
   );
 }
@@ -391,6 +385,8 @@ function GhostBtn({ children, onClick }: { children: ReactNode; onClick: () => v
 export { UsersIcon, CheckIcon, CloseIcon };
 
 // ── styles ───────────────────────────────────────────────────────────────────
+const NAV_H = 60;
+const NAV_ICON_H = Math.round(NAV_H * 0.8); // 48px — 80 % of nav height
 const shell: React.CSSProperties = { minHeight: "100dvh", display: "flex", justifyContent: "center", alignItems: "center", padding: 0 };
 // Letterbox backdrop shown around a fixed-aspect frame (ASPECT_RATIO = "W:H").
 const letterbox: React.CSSProperties = { background: "#0c0e12" };
