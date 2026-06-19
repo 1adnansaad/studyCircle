@@ -56,7 +56,26 @@ export function createSession(name: string, klass: number, tier: Tier = "free"):
   return { id, name, class: klass, tier, createdAt };
 }
 
-/** Logout = the only reset. Clears the mutable layer via cascade; world stays. */
+/**
+ * Logout = the only reset. Clears the mutable layer; the seeded world stays.
+ *
+ * Most mutable tables clear via `ON DELETE CASCADE` when the session row goes.
+ * But user-authored *posts* (session_id set) are referenced by rows whose FK to
+ * posts(id) does NOT cascade — `post_embeds`, `comments`, `bookmarks`, and other
+ * posts via `repost_of_post_id`. Cascade order is unspecified, so we explicitly
+ * remove those dependents (and the user posts) in dependency order first, then
+ * delete the session row to cascade-clear the remaining mutable tables.
+ */
 export function logout(): void {
-  getDb().prepare("DELETE FROM session").run();
+  const db = getDb();
+  const userPosts = "SELECT id FROM posts WHERE session_id IS NOT NULL";
+  db.transaction(() => {
+    db.prepare(`DELETE FROM post_embeds WHERE post_id IN (${userPosts})`).run();
+    db.prepare(`DELETE FROM comments   WHERE post_id IN (${userPosts})`).run();
+    db.prepare(`DELETE FROM bookmarks  WHERE post_id IN (${userPosts})`).run();
+    // Reposts/quotes reference other posts via repost_of_post_id → drop them first.
+    db.prepare(`DELETE FROM posts WHERE session_id IS NOT NULL AND repost_of_post_id IS NOT NULL`).run();
+    db.prepare(`DELETE FROM posts WHERE session_id IS NOT NULL`).run();
+    db.prepare("DELETE FROM session").run(); // cascade clears the rest of the mutable layer
+  })();
 }

@@ -94,8 +94,16 @@ This build follows the **build spec**:
   search-results view). **No LLM key / failure → `fallbackTopics`** (grouped by
   subject), labeled "LLM unavailable — showing demo topics." Owns its state in
   `explore-client.tsx`; independent of the weekly-search counter.
-- **Like** → upsell for **Free**, a "Liked." toast for **Premium** (no
-  persistence either way; likes are seed-only).
+- **Like** → upsell for **Free**; for **Premium** a local toggle (heart turns red,
+  "Liked." toast — no persistence; likes are seed-only). **Repost** flips its icon
+  to active green on success. Both are local `useState` in post-card.tsx (survive
+  `router.refresh()`).
+- **Quote button removed** from PostCard (user 2026-06-19). `repostAction` /
+  `createRepost` still power Repost (and render the nested repost-of reference).
+- **Lesson 3-day-free CTA is Free-only:** the post embed bar shows "শুরু করো · ৩
+  দিন ফ্রি" (Free) vs "শুরু করো" (Premium); the S10 lesson page swaps its
+  UpsellButton for a plain DeadButton on Premium (reads tier via
+  `getCurrentSession()`).
 - **Allowed writes** (work + persist): **Bookmark** (≤cap), **Join group** (≤cap, no
   leaving), **Search** (≤cap/week), **Follow/Unfollow** (uncapped), **post budget**
   (≤cap/week, above).

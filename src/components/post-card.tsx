@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import type { PostCardVM, CommentVM } from "@/lib/view";
 import { useApp } from "./app-shell";
 import { toggleBookmarkAction, repostAction } from "@/app/actions";
 import {
-  CommentIcon, HeartIcon, RepostIcon, QuoteIcon, ShareIcon, BookmarkIcon, PlayIcon,
+  CommentIcon, HeartIcon, RepostIcon, ShareIcon, BookmarkIcon, PlayIcon,
 } from "./icons";
 
 // ── Clickable NameCard chips → explainer dialog ──────────────────────────────
@@ -63,6 +63,8 @@ export function PostCard({ post }: { post: PostCardVM }) {
   const router = useRouter();
   const { upsell, bookmarkAtCap, toast, caps, postCapUpsell, session } = useApp();
   const [, startTransition] = useTransition();
+  const [liked, setLiked] = useState(false);
+  const [reposted, setReposted] = useState(false);
 
   function bookmark() {
     startTransition(async () => {
@@ -74,11 +76,19 @@ export function PostCard({ post }: { post: PostCardVM }) {
     });
   }
 
-  function repost(quote: boolean) {
+  // Like is gated for Free (→ upsell); Premium toggles a local "liked" state.
+  function like() {
+    if (!session.premium) { upsell(); return; }
+    setLiked((v) => !v);
+    toast(liked ? "Removed like." : "Liked.");
+  }
+
+  function repost() {
     startTransition(async () => {
       const res = await repostAction(post.id);
-      if (res.status === "at_cap") postCapUpsell();
-      else toast(quote ? "Quoted to your feed." : "Reposted to your feed.");
+      if (res.status === "at_cap") { postCapUpsell(); return; }
+      setReposted(true);
+      toast("Reposted to your feed.");
       router.refresh();
     });
   }
@@ -123,15 +133,14 @@ export function PostCard({ post }: { post: PostCardVM }) {
               {post.embed.subject && <div style={{ fontSize: 12, color: "rgba(255,255,255,.78)", marginTop: 2 }}>{post.embed.subject}</div>}
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 13, padding: 9 }}>শুরু করো · ৩ দিন ফ্রি</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 13, padding: 9 }}>{session.premium ? "শুরু করো" : "শুরু করো · ৩ দিন ফ্রি"}</div>
         </button>
       )}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
         <Action onClick={() => router.push(`/post/${post.id}`)} label={post.comments}><CommentIcon size={19} /></Action>
-        <Action onClick={() => (session.premium ? toast("Liked.") : upsell())} label={post.likes}><HeartIcon size={19} /></Action>
-        <Action onClick={() => repost(false)} label={post.reposts}><RepostIcon size={19} /></Action>
-        <Action onClick={() => repost(true)}><QuoteIcon size={19} /></Action>
+        <Action onClick={like} label={post.likes} color={liked ? "var(--ll-error)" : undefined}><HeartIcon size={19} fill={liked ? "currentColor" : "none"} /></Action>
+        <Action onClick={repost} label={post.reposts} color={reposted ? "var(--ll-success)" : undefined}><RepostIcon size={19} /></Action>
         <Action onClick={() => toast("Shareable link copied to clipboard!")}><ShareIcon size={19} /></Action>
         <button onClick={bookmark} style={{ ...actionBtn, color: post.bookmarked ? "var(--ll-secondary)" : "var(--ll-on-surface-variant)" }} aria-label="Bookmark">
           <BookmarkIcon size={19} filled={post.bookmarked} />
@@ -158,9 +167,9 @@ export function CommentCard({ comment }: { comment: CommentVM }) {
   );
 }
 
-function Action({ onClick, label, children }: { onClick: () => void; label?: string; children: React.ReactNode }) {
+function Action({ onClick, label, children, color }: { onClick: () => void; label?: string; children: React.ReactNode; color?: string }) {
   return (
-    <button onClick={onClick} style={actionBtn}>
+    <button onClick={onClick} style={{ ...actionBtn, ...(color ? { color } : null) }}>
       {children}
       {label != null && <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>}
     </button>

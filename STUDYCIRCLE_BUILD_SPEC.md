@@ -34,9 +34,9 @@ One rule: **affordances visible, reads free, writes gated — except the metered
 |---|---|---|
 | **Reads — always free** | Browse feed, Groups, search results, post detail/threads, profiles | Work normally |
 | **Allowed writes** (work + persist) | **Bookmark** (≤`BOOKMARK_CAP`, default 5) · **Join group** (≤`JOIN_GROUP_CAP`, default 2, no leaving) · **Search** (≤`SEARCH_WEEKLY_CAP`/week, default 7) · **Follow / Unfollow** (uncapped) | Execute, persist, show quota where capped; block at cap |
-| **Metered writes** (work + persist, one shared weekly budget) | **Post · Comment · Reply · Repost · Quote** — all draw from `POST_WEEKLY_CAP`/week (default 5) | Persist as user-authored content (appears in feed/threads, interactable, cleared on logout); **monotonic** — un-reposting/un-quoting never refunds; block at cap → upsell |
-| **Free affordance** (no gate, no persistence) | **Share (external)** | Confirmation toast **"Post copied for everyone to see."** — no upsell, no state change |
-| **Gated writes** (button visible; tap → subscribe/upsell) | **Like** | Show upsell; no state change |
+| **Metered writes** (work + persist, one shared weekly budget) | **Post · Comment · Reply · Repost** — all draw from `POST_WEEKLY_CAP`/week (default 5) | Persist as user-authored content (appears in feed/threads, interactable, cleared on logout); **monotonic** — un-reposting never refunds; block at cap → upsell. Repost flips the icon to its active (green) state. |
+| **Free affordance** (no gate, no persistence) | **Share (external)** · **Like** (Premium only) | Share → toast **"Shareable link copied to clipboard!"**. Premium Like → toast + the heart turns red (active). No persistence. |
+| **Gated writes** (button visible; tap → subscribe/upsell) | **Like** (Free only) | Show upsell; no state change |
 | **Real bridge** | Tap a **Shikho embed** | Opens lesson preview / routes toward the course |
 
 **Change from the design spec:** Follow has moved from *gated* to *allowed* — it now persists and drives follower counts (§2, §3).
@@ -72,7 +72,9 @@ No separate "save" action — **bookmark is the save**, and it's allowed. The co
 
 This makes the count move when you follow/unfollow, persist because the follow set persists, and revert automatically on logout with nothing to unwind.
 
-**Logout = reset (the only reset).** Logout clears the current session's **mutable layer** — identity, bookmarks, joined groups, follow set, searches-used — and returns to Login, giving the next tester a clean slate. It does **not** touch the seeded world (posts, profiles, groups, comments, embeds), so follower counts revert to their seed values automatically. Exit/close/restart resets **nothing**.
+**Logout = reset (the only reset).** Logout clears the current session's **mutable layer** — identity, bookmarks, joined groups, follow set, searches-used, weekly post budget, LLM tokens, **and the user-authored posts/comments/reposts** — and returns to Login, giving the next tester a clean slate. It does **not** touch the seeded world (seeded posts, profiles, groups, comments, embeds), so follower counts revert to their seed values automatically. Exit/close/restart resets **nothing**.
+
+**Implementation note (logout ordering, user 2026-06-19).** Most mutable tables clear via `ON DELETE CASCADE` when the `session` row is deleted. But user-authored *posts* (`session_id` set) are referenced by rows whose FK to `posts(id)` does **not** cascade — `post_embeds`, `comments`, `bookmarks`, and other posts via `repost_of_post_id` — so a bare `DELETE FROM session` throws `FOREIGN KEY constraint failed` the moment a user has posted (e.g. a post with a Shikho embed). `logout()` therefore runs a transaction that removes those dependents in dependency order — `post_embeds` → `comments` → `bookmarks` on user posts → reposts/quotes (carry `repost_of_post_id`) → remaining user posts — **then** deletes the session row to cascade-clear the rest. Seeded posts/comments are never touched (they have `session_id` NULL).
 
 So: **persist on exit, reset on logout.**
 
@@ -93,12 +95,12 @@ So: **persist on exit, reset on logout.**
 - **S2 Home** — Replica of the current home (screenshot), unchanged except the nav (§4). Toggle → S3; Search → S8; any other home control → dead-end.
 - **S3 StudyCircle · Feed** — Top bar (avatar/menu → Sidebar) + tabs **Feed | Groups** + compose entry → S9. Scrolling PostCards, some with a Shikho embed. **Feed renders seeded posts regardless of follow state** — never an empty "follow someone" wall. Card body → S5; name-card → S6. Tab → S4.
 - **S4 StudyCircle · Groups** — GroupCards (subject, active-user count, posts/day). New user → suggested groups; own joined list "Groups empty" until joined. Not-joined → join-confirm → joined / at-cap block. Joined → S7.
-- **S5 Post detail / thread** — Original PostCard pinned + comment thread (each comment uses NameCard). Reply input visible and **works** — a reply persists in the thread and consumes the weekly post budget (block at cap → upsell). Reading free; Repost/Quote also metered; Share → "post copied" toast (free); Like → upsell. Bookmark metered. Embeds → S10. Name-card → S6.
+- **S5 Post detail / thread** — Original PostCard pinned + comment thread (each comment uses NameCard). Reply input visible and **works** — a reply persists in the thread and consumes the weekly post budget (block at cap → upsell). Reading free; Repost also metered (icon turns active); Share → "copied" toast (free); Like → upsell (Free) / active heart (Premium). Bookmark metered. Embeds → S10. Name-card → S6.
 - **S6 Profile (any user, incl. own)** — Header = NameCard + **follower count** and **following count**. **Follow/Following button works and persists** (§3). Sections: Posts, Groups. Own profile uses captured Name/Class. Post → S5; group → join/enter rules.
 - **S7 Group view** — Title becomes group name + back button. Header: name, description, privacy (seed). Member PostCards behave like feed. Back → S4.
 - **S8 Explore (Search)** — Entering flips toggle → "Home". NL search field with live **"{n} / 120"** counter; weekly-search meter ("{n} of {SEARCH_WEEKLY_CAP}", or "Unlimited ✦" for Premium); default state shows trending posts. Submit decrements meter (block at cap; Premium unlimited) and calls the LLM (§9). Results = standard PostCards. Result → S5. **Trending now card:** **Free** users see the locked promo (blurred topics + lock + "Unlock trending topics" → dead-end) exactly as before — it's a Premium feature. **Premium** users get the live AI card: its CTA asks the LLM to cluster the feed into up to **5 trending topics** (title + one-line summary); tapping a topic opens the posts it summarized (as PostCards). **No LLM key / call fails → deterministic demo topics** (grouped by subject) with the copy *"LLM unavailable — showing demo topics."* — still tappable to real posts.
 - **S9 Composer** — Fully clickable. Author preview (own Name/Class), text field, optional image attach, privacy selector/chip (display-only seed), **"Embed from Shikho" picker** attaching a ShikhoEmbed preview, and the **weekly post meter** (`used / POST_WEEKLY_CAP`). Post **publishes a real post** (own-authored, appears at the top of the Feed and on the own profile) and consumes the weekly budget; at the cap → upsell (→ C9–C12 courses).
-- **S10 Lesson preview (the bridge)** — Reached from any embed. Thumbnail, lesson title, CTA **শুরু করো / ৩ দিন ফ্রি**, routes toward the course. Make it feel real, not a dead-end.
+- **S10 Lesson preview (the bridge)** — Reached from any embed. Thumbnail, lesson title. **Free:** CTA **শুরু করো · ৩ দিন ফ্রি** → upsell. **Premium:** the 3-day-free-trial CTA is dropped (no trial pitch for a paid account) — copy says the lesson is included with Premium, and the button is a plain **শুরু করো**. Make it feel real, not a dead-end.
 - **Sidebar (drawer)** — Profile (own, S6) · My Bookmarks (the set; empty = "Bookmarks empty"; remove flow lands here) · Settings (dead-end).
 
 **Dead-button rule:** only the controls in §1's allowed/gated rows, the toggle, Search, in-StudyCircle navigation, and follow do anything. Everything else → toast **"This page is not available in the current demo."**
@@ -107,7 +109,7 @@ So: **persist on exit, reset on logout.**
 
 ## 6. Components
 
-- **PostCard** — NameCard header; text; optional image; optional ShikhoEmbed; optional reposted-original reference; actions **Comment · Like · Repost · Quote · Share · Bookmark**. Comment → opens the thread (reply there); Repost/Quote persist (metered); Bookmark allowed/metered; Share → free "post copied" toast; Like gated. Reused in feed, Groups, results, profile.
+- **PostCard** — NameCard header; text; optional image; optional ShikhoEmbed; optional reposted-original reference; actions **Comment · Like · Repost · Share · Bookmark** (**Quote button removed**, user 2026-06-19). Comment → opens the thread (reply there); Repost persists (metered) and turns its icon active; Bookmark allowed/metered; Share → free "copied" toast; Like → upsell (Free) or active red heart (Premium). The embed's CTA reads **"শুরু করো · ৩ দিন ফ্রি"** for Free and **"শুরু করো"** for Premium. Reused in feed, Groups, results, profile.
 - **NameCard** — no profile photo; user tag (→ S6), class tag, leaderboard tag (seed), privacy tag (seed).
 - **ShikhoEmbed** — deep-indigo thumbnail, lesson title, CTA শুরু করো / ৩ দিন ফ্রি; tap → S10. In feed, Groups, results, composer preview.
 - **GroupCard** — subject, active-user count, posts/day; state-aware (not-joined → join flow; joined → S7).
@@ -139,7 +141,7 @@ So: **persist on exit, reset on logout.**
 - `post_usage` (session_id, posts_used, week_start) — enforce ≤`POST_WEEKLY_CAP`/week (shared by post/comment/reply/repost/quote)
 - *user-authored* `posts`/`comments` rows (via `session_id`, above)
 
-Logout = delete the session row; ON DELETE CASCADE clears every mutable table **and** the user-authored posts/comments. Follower counts and "following" counts are **derived**, never stored mutably.
+Logout clears every mutable table **and** the user-authored posts/comments. The `session`-keyed tables clear via `ON DELETE CASCADE`; the user-authored `posts`/`comments` (and their `post_embeds`/`bookmarks`/repost references, which don't cascade from `posts(id)`) are removed in dependency order **before** the session row is deleted — see the §3 logout ordering note. Follower counts and "following" counts are **derived**, never stored mutably.
 
 ---
 

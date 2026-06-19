@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
+import { getCurrentSession } from "@/lib/session";
 import { lessonView } from "@/lib/view";
 import { Screen, ScrollBody } from "@/components/layout-bits";
 import { BackHeader } from "@/components/screen-chrome";
-import { UpsellButton } from "@/components/screen-widgets";
+import { UpsellButton, DeadButton } from "@/components/screen-widgets";
 import { PlayIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const lesson = lessonView(id);
   if (!lesson) notFound();
+  const premium = getCurrentSession()?.tier === "premium";
 
   return (
     <Screen>
@@ -29,15 +31,23 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
           </div>
           <h1 style={{ margin: "0 0 8px", fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 24, lineHeight: 1.25, color: "var(--ll-on-surface)" }}>{lesson.title}</h1>
           <p style={{ margin: "0 0 18px", fontSize: 15, lineHeight: 1.6, color: "var(--ll-on-surface-variant)" }}>
-            A free preview from the Shikho course library. Unlock the full chapter — animated lessons, notes, and MCQ practice — with your 3-day free trial.
+            {premium
+              ? "A lesson from the Shikho course library — included with your Premium plan. Animated lessons, notes, and MCQ practice."
+              : "A free preview from the Shikho course library. Unlock the full chapter — animated lessons, notes, and MCQ practice — with your 3-day free trial."}
           </p>
-          <UpsellButton
-            title="শুরু করো · ৩ দিন ফ্রি"
-            body={`Start this lesson free for 3 days — then keep your full ${lesson.klass ?? ""} course.`.trim()}
-            style={{ width: "100%", border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 16, padding: 15, borderRadius: 999, boxShadow: "var(--ll-shadow-cta)" }}
-          >
-            শুরু করো · ৩ দিন ফ্রি
-          </UpsellButton>
+          {premium ? (
+            <DeadButton style={{ width: "100%", border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 16, padding: 15, borderRadius: 999, boxShadow: "var(--ll-shadow-cta)" }}>
+              শুরু করো
+            </DeadButton>
+          ) : (
+            <UpsellButton
+              title="শুরু করো · ৩ দিন ফ্রি"
+              body={`Start this lesson free for 3 days — then keep your full ${lesson.klass ?? ""} course.`.trim()}
+              style={{ width: "100%", border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 16, padding: 15, borderRadius: 999, boxShadow: "var(--ll-shadow-cta)" }}
+            >
+              শুরু করো · ৩ দিন ফ্রি
+            </UpsellButton>
+          )}
         </div>
       </ScrollBody>
     </Screen>
