@@ -535,8 +535,13 @@ src/
     health.ts           Step-1 boot-counter persistence proof
   data/
     seed.json           committed default seed source (Bengali content)
-data/                   live SQLite (gitignored); optional seed template
-scripts/                db-reset.mjs, db-template.mjs
+data/                   live SQLite (gitignored); committed enhanced-seed.db template
+scripts/                db-reset.mjs, db-template.mjs, build-enhanced-seed.mjs
+next.config.mjs         Next config (output:"standalone" for a small Docker image)
+Dockerfile              multi-stage build (compile → next build → slim non-root runtime)
+.dockerignore           keeps node_modules / .env / live DB out of the image
+docker-compose.yml      one-command run + named data volume
+.env.docker.example     runtime env template for containers (copy → .env.docker)
 ```
 
 ---
