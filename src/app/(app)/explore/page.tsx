@@ -18,7 +18,9 @@ export default function ExplorePage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 800, fontSize: 22, color: "var(--ll-on-surface)" }}>Explore</span>
           <Link href="/studycircle" style={{ display: "inline-flex", alignItems: "center", gap: 3, textDecoration: "none", fontSize: 14, fontWeight: 700, color: "var(--ll-primary)" }}>
-            Feed <ChevronRight size={16} />
+            
+            <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 800, fontSize: 22, color: "#6366F1" }}>Feed <ChevronRight size={16} /></span>
+            
           </Link>
         </div>
       </PinnedHeader>
