@@ -26,6 +26,9 @@ export const config = {
   bookmarkCap: intEnv("BOOKMARK_CAP", 5),
   joinGroupCap: intEnv("JOIN_GROUP_CAP", 2),
   searchWeeklyCap: intEnv("SEARCH_WEEKLY_CAP", 7),
+  // Weekly budget for write-type actions (post + comment/reply + repost + quote);
+  // each consumes one, monotonic per week (un-repost/un-quote never refunds).
+  postWeeklyCap: intEnv("POST_WEEKLY_CAP", 5),
   // Follow is uncapped unless FOLLOW_CAP is set.
   followCap: process.env.FOLLOW_CAP ? intEnv("FOLLOW_CAP", 0) : null,
 
@@ -53,6 +56,7 @@ export const publicCaps = {
   bookmarkCap: config.bookmarkCap,
   joinGroupCap: config.joinGroupCap,
   searchWeeklyCap: config.searchWeeklyCap,
+  postWeeklyCap: config.postWeeklyCap,
   followCap: config.followCap,
 } as const;
 

@@ -26,6 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         bookmarkCap: publicCaps.bookmarkCap,
         joinGroupCap: publicCaps.joinGroupCap,
         searchWeeklyCap: publicCaps.searchWeeklyCap,
+        postWeeklyCap: publicCaps.postWeeklyCap,
       }}
       bookmarks={bm.posts.map((p) => ({ id: p.id, tag: p.tag, body: p.body }))}
     >

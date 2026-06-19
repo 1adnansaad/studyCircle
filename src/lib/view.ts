@@ -26,6 +26,7 @@ import {
   followingCount,
   displayedFollowerCount,
   searchesUsed,
+  postsUsed,
   type PostRow,
   type GroupRow,
 } from "./repo";
@@ -258,6 +259,11 @@ export function lessonView(lessonId: string) {
     duration: l.duration ? bn(l.duration) : null,
     courseRef: l.course_ref,
   };
+}
+
+/** Weekly post-budget meter for the composer (post/comment/repost/quote share it). */
+export function postMeter(sessionId: string) {
+  return { used: postsUsed(sessionId), cap: publicCaps.postWeeklyCap };
 }
 
 export function composerLessons() {

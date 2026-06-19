@@ -89,11 +89,12 @@ export function Empty({ title, body }: { title: string; body: string }) {
 
 // ── Gated reply bar (post detail) ─────────────────────────────────────────────
 export function ReplyBar() {
-  const { upsell } = useApp();
+  const { submitPost } = useApp();
+  // Replies count as posts — they draw from the same weekly budget (→ upsell at cap).
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--ll-surface-container-lowest)", boxShadow: "0 -2px 16px rgba(25,28,30,.06)", flex: "none" }}>
-      <button onClick={() => upsell()} style={{ flex: 1, textAlign: "left", border: "none", background: "var(--ll-surface-container-low)", color: "var(--ll-on-surface-variant)", borderRadius: 999, padding: "12px 16px", fontSize: 14, cursor: "pointer" }}>Write a reply…</button>
-      <button onClick={() => upsell()} style={{ border: "none", background: "var(--ll-secondary)", color: "#fff", borderRadius: 999, padding: "10px 18px", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Reply</button>
+      <button onClick={() => submitPost("Reply added")} style={{ flex: 1, textAlign: "left", border: "none", background: "var(--ll-surface-container-low)", color: "var(--ll-on-surface-variant)", borderRadius: 999, padding: "12px 16px", fontSize: 14, cursor: "pointer" }}>Write a reply…</button>
+      <button onClick={() => submitPost("Reply added")} style={{ border: "none", background: "var(--ll-secondary)", color: "#fff", borderRadius: 999, padding: "10px 18px", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Reply</button>
     </div>
   );
 }
@@ -112,8 +113,8 @@ export function GroupComposeButton() {
 
 // ── Composer (S9) ─────────────────────────────────────────────────────────────
 const PRIVACY = ["Public", "Followers", "Only me"] as const;
-export function Composer({ authorTag, classTag, lessons }: { authorTag: string; classTag: string; lessons: { id: string; title: string; subject: string | null; klass: string | null; duration: string | null }[] }) {
-  const { upsell, deadEnd } = useApp();
+export function Composer({ authorTag, classTag, lessons, used, cap }: { authorTag: string; classTag: string; lessons: { id: string; title: string; subject: string | null; klass: string | null; duration: string | null }[]; used: number; cap: number }) {
+  const { submitPost, deadEnd } = useApp();
   const [text, setText] = useState("");
   const [privacy, setPrivacy] = useState<(typeof PRIVACY)[number]>("Public");
   const [embed, setEmbed] = useState<{ title: string; subject: string | null } | null>(null);
@@ -122,6 +123,13 @@ export function Composer({ authorTag, classTag, lessons }: { authorTag: string; 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 16px 0", display: "flex", flexDirection: "column" }} className="sc-scroll">
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <MeterChip
+            text={`${used} / ${cap}`}
+            title="Free-trial weekly posts"
+            body={`On the free trial you get ${cap} posts a week — comments, reposts, and quotes count too, and the count doesn't roll back. Subscribe to Shikho Premium to post without limits.`}
+          />
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ll-primary)" }}>{authorTag}</div>
           <button onClick={() => setPrivacy(PRIVACY[(PRIVACY.indexOf(privacy) + 1) % PRIVACY.length])} style={{ border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999, background: "var(--ll-surface-container-high)", color: "var(--ll-on-surface-variant)" }}>{privacy} ▾</button>
@@ -146,7 +154,7 @@ export function Composer({ authorTag, classTag, lessons }: { authorTag: string; 
         <button onClick={() => setPicker(true)} style={toolBtn} aria-label="Embed from Shikho"><PlayIcon size={20} stroke="var(--ll-primary)" /></button>
         <button onClick={deadEnd} style={toolBtn} aria-label="Attach image"><ImageIcon size={20} /></button>
         <div style={{ flex: 1 }} />
-        <button onClick={() => upsell()} style={{ border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 14, padding: "10px 22px", borderRadius: 999, boxShadow: "var(--ll-shadow-cta)" }}>Post</button>
+        <button onClick={() => submitPost("Posted")} style={{ border: "none", cursor: "pointer", background: "var(--ll-secondary)", color: "#fff", fontWeight: 600, fontSize: 14, padding: "10px 22px", borderRadius: 999, boxShadow: "var(--ll-shadow-cta)" }}>Post</button>
       </div>
 
       {picker && (

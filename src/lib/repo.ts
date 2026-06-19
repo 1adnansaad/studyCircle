@@ -3,9 +3,9 @@
  * mutable user layer with server-side cap enforcement (spec §1, §2). Follower
  * and following counts are DERIVED here (§3), never stored mutably.
  *
- * Server-only. The terminal gated writes (comment/reply/like/repost/quote/
- * share/post) are NOT here — they never change state (handled as upsell in the
- * UI, Step 5). The four allowed writes are: bookmark, join, search, follow.
+ * Server-only. Allowed writes that persist: bookmark, join, search, follow, and
+ * the weekly post budget (post/comment/repost/quote share POST_WEEKLY_CAP). Like
+ * and share remain fully gated → upsell (handled in the UI, no state change).
  */
 import { getDb } from "./db";
 import { config } from "./config";
@@ -375,6 +375,34 @@ export function recordSearch(sessionId: string): SearchResult {
     .prepare(
       `INSERT INTO search_usage (session_id, searches_used, week_start) VALUES (?, 1, ?)
        ON CONFLICT(session_id, week_start) DO UPDATE SET searches_used = searches_used + 1`
+    )
+    .run(sessionId, week);
+  return { ok: true, used: used + 1 };
+}
+
+// ── Post usage (allowed, capped ≤ POST_WEEKLY_CAP per week) ───────────────────
+// One shared weekly budget for post / comment / repost / quote. Monotonic:
+// un-reposting or un-quoting never refunds (so we only ever increment).
+
+export function postsUsed(sessionId: string): number {
+  const week = currentWeekStart();
+  const row = getDb()
+    .prepare("SELECT posts_used FROM post_usage WHERE session_id = ? AND week_start = ?")
+    .get(sessionId, week) as { posts_used: number } | undefined;
+  return row?.posts_used ?? 0;
+}
+
+export type PostUsageResult = { ok: true; used: number } | { ok: false; reason: "at_cap"; used: number };
+
+/** Consumes one weekly post; blocks at the cap (caller routes the block to upsell). */
+export function recordPost(sessionId: string): PostUsageResult {
+  const week = currentWeekStart();
+  const used = postsUsed(sessionId);
+  if (used >= config.postWeeklyCap) return { ok: false, reason: "at_cap", used };
+  getDb()
+    .prepare(
+      `INSERT INTO post_usage (session_id, posts_used, week_start) VALUES (?, 1, ?)
+       ON CONFLICT(session_id, week_start) DO UPDATE SET posts_used = posts_used + 1`
     )
     .run(sessionId, week);
   return { ok: true, used: used + 1 };

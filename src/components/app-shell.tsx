@@ -16,6 +16,7 @@ import {
   logoutAction,
   joinGroupAction,
   removeBookmarkAction,
+  recordPostAction,
 } from "@/app/actions";
 import {
   SearchIcon,
@@ -42,7 +43,7 @@ export type ShellSession = {
   tag: string;
   initials: string;
 };
-export type ShellCaps = { bookmarkCap: number; joinGroupCap: number; searchWeeklyCap: number };
+export type ShellCaps = { bookmarkCap: number; joinGroupCap: number; searchWeeklyCap: number; postWeeklyCap: number };
 export type ShellGroup = { id: string; name: string; topic: string | null; joinedCount: number };
 export type ShellBookmark = { id: string; tag: string; body: string };
 
@@ -64,6 +65,8 @@ type Ctx = {
   joinConfirm: (g: ShellGroup) => void;
   bookmarkAtCap: () => void;
   chipInfo: (o: { title: string; body: string; showCta?: boolean }) => void;
+  /** Metered write (post/comment/repost/quote): consume one weekly post → toast, or upsell at cap. */
+  submitPost: (label: string) => void;
 };
 
 const AppCtx = createContext<Ctx | null>(null);
@@ -111,6 +114,7 @@ export function AppShell({
     joinConfirm: (group) => setModal({ kind: "joinconfirm", group }),
     bookmarkAtCap: () => setModal({ kind: "bookmarkcap" }),
     chipInfo: (o) => setModal({ kind: "chipinfo", ...o }),
+    submitPost: (label) => submitPost(label),
   };
 
   const [sidebar, setSidebar] = useState(false);
@@ -152,6 +156,21 @@ export function AppShell({
   function removeBm(postId: string) {
     startTransition(async () => {
       await removeBookmarkAction(postId);
+      router.refresh();
+    });
+  }
+
+  // Metered write: post / comment / repost / quote all draw from POST_WEEKLY_CAP.
+  function submitPost(label: string) {
+    startTransition(async () => {
+      const res = await recordPostAction();
+      if (res.status === "at_cap")
+        setModal({
+          kind: "upsell",
+          title: `You've used all ${res.cap} of your weekly posts`,
+          body: `On the free trial, posts, comments, reposts, and quotes share a budget of ${res.cap} a week. Subscribe to post without limits — and unlock your ${courseLine} courses.`,
+        });
+      else toast(`${label}. ${res.used} of ${res.cap} weekly posts used.`);
       router.refresh();
     });
   }
@@ -286,7 +305,7 @@ function Upsell({ courseLine, title, body, onClose, onCta }: { courseLine: strin
   return (
     <SheetBody>
       <SheetTitle>{title ?? "Subscribe to unlock more"}</SheetTitle>
-      <SheetText>{body ?? `Unlock posting, likes, comments, reposts, and quotes — along with your ${courseLine} courses.`}</SheetText>
+      <SheetText>{body ?? `Unlock likes, shares, and unlimited posting — along with your ${courseLine} courses.`}</SheetText>
       <PrimaryBtn onClick={onCta}>See {courseLine} courses</PrimaryBtn>
       <GhostBtn onClick={onClose}>Maybe later</GhostBtn>
     </SheetBody>

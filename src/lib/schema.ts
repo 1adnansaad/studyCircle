@@ -142,6 +142,16 @@ CREATE TABLE IF NOT EXISTS search_usage (
   PRIMARY KEY (session_id, week_start)
 );
 
+-- Weekly write budget (spec §1, revised): post / comment / repost / quote each
+-- consume one. Monotonic within a week — un-reposting or un-quoting never
+-- refunds. Cleared on logout via cascade.
+CREATE TABLE IF NOT EXISTS post_usage (
+  session_id TEXT NOT NULL REFERENCES session(id) ON DELETE CASCADE,
+  posts_used INTEGER NOT NULL DEFAULT 0,
+  week_start TEXT NOT NULL,
+  PRIMARY KEY (session_id, week_start)
+);
+
 -- Per-session LLM token budget (spec extension): cumulative tokens spent on
 -- Explore search this demo session. Cleared on logout via cascade.
 CREATE TABLE IF NOT EXISTS llm_token_usage (

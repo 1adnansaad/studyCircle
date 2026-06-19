@@ -11,6 +11,8 @@ import {
   toggleFollow,
   recordSearch,
   searchesUsed,
+  postsUsed,
+  recordPost,
   listSearchCorpus,
   llmTokensUsed,
   addLlmTokens,
@@ -77,6 +79,25 @@ export async function joinGroupAction(groupId: string): Promise<JoinResult> {
   const res = joinGroup(sid, groupId);
   refresh();
   return res;
+}
+
+export type PostResponse =
+  | { status: "ok"; used: number; cap: number }
+  | { status: "at_cap"; used: number; cap: number };
+
+/**
+ * Consume one weekly post (spec §1, revised): post / comment / repost / quote
+ * all draw from the same POST_WEEKLY_CAP budget. At the cap the write is blocked
+ * and the UI routes to the upsell; otherwise it's recorded (monotonic — never
+ * refunded). Content itself is not rendered into the seeded feed.
+ */
+export async function recordPostAction(): Promise<PostResponse> {
+  const sid = requireSession();
+  const cap = publicCaps.postWeeklyCap;
+  if (postsUsed(sid) >= cap) return { status: "at_cap", used: postsUsed(sid), cap };
+  const res = recordPost(sid);
+  refresh();
+  return { status: "ok", used: res.used, cap };
 }
 
 export type SearchResponse =

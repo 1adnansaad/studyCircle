@@ -28,8 +28,9 @@ see "Conflicts resolved" below.
 - **Persistence is real** — every object in spec §2 must survive a server restart
   AND a browser close. Verified in Step 1 via a boot-counter health row.
 - **Config is env-only** (`src/lib/config.ts`). Never hardcode caps or paths.
-  - Caps: `BOOKMARK_CAP` (5), `JOIN_GROUP_CAP` (2), `SEARCH_WEEKLY_CAP` (7) — drive
-    enforcement, meters, AND copy. `FOLLOW_CAP` optional (follow is uncapped).
+  - Caps: `BOOKMARK_CAP` (5), `JOIN_GROUP_CAP` (2), `SEARCH_WEEKLY_CAP` (7),
+    `POST_WEEKLY_CAP` (5) — drive enforcement, meters, AND copy. `FOLLOW_CAP`
+    optional (follow is uncapped).
   - `LLM_PROVIDER` (default `gemini`, also `anthropic`), `GEMINI_API_KEY` /
     `ANTHROPIC_API_KEY`. **LLM calls are server-side only** (an API route, Step 6).
 - **Design tokens centralized** in `src/styles/tokens.css` (single `--ll-*` source,
@@ -55,11 +56,18 @@ This build follows the **build spec**:
     `২ ঘণ্টা আগে`, lesson durations). **Free-trial freemium meters stay English/Latin**
     (`5 / 5` bookmarks, `0 of 7 searches`) since those are StudyCircle UI strings.
     All conversion via `src/lib/format.ts` (`bn`, `bnCount`, `classTag`, `relativeTime`).
-- **Gated writes (§1):** Comment, Reply, Like, Repost, Quote, **Share**, and the
-  terminal **Post** are all **gated → upsell, no state change**.
-  *(The prototype made posting metered-7/week and Share free — do NOT follow that.)*
+- **Metered writes (§1, revised by user 2026-06-19):** **Post, Comment, Reply,
+  Repost, Quote** all draw from one shared weekly budget `POST_WEEKLY_CAP` (5).
+  Each consumes one; **monotonic** — un-reposting/un-quoting never refunds. At the
+  cap they route to the upsell. The composer shows the meter (`used / cap`) like
+  bookmarks/search/groups. Backed by mutable `post_usage` (cleared on logout),
+  `recordPost`/`postsUsed` in `repo.ts`, `recordPostAction` in `actions.ts`,
+  `submitPost(label)` in the app-shell context. **Posted content is NOT rendered
+  into the seeded feed** — only the budget + gating are modeled (like Search).
+- **Still fully gated → upsell, no state change (§1):** **Like** and **Share**.
 - **Allowed writes** (work + persist): **Bookmark** (≤cap), **Join group** (≤cap, no
-  leaving), **Search** (≤cap/week), **Follow/Unfollow** (uncapped).
+  leaving), **Search** (≤cap/week), **Follow/Unfollow** (uncapped), **post budget**
+  (≤cap/week, above).
 - **Follower count is derived, never mutated in place (§3):**
   `displayed = follower_count_seed + (1 if session follows else 0)`.
 - **Logout is the only reset (§3):** clears the session's mutable layer; never
@@ -89,7 +97,8 @@ Explore search, bottom-sheet modals.
 **Seeded world (never cleared on logout):** `profiles`, `posts`, `post_embeds`,
 `comments`, `groups`.
 **Mutable user layer (cleared on logout):** `session`, `bookmarks`,
-`joined_groups`, `follows`, `search_usage`. Caps enforced server-side.
+`joined_groups`, `follows`, `search_usage`, `post_usage`, `llm_token_usage`.
+Caps enforced server-side.
 Follower & following counts are derived, never stored mutably.
 
 ## How to run

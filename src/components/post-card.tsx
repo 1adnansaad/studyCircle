@@ -61,7 +61,7 @@ export function NameLink({ tag, profileId }: { tag: string; profileId: string })
 
 export function PostCard({ post }: { post: PostCardVM }) {
   const router = useRouter();
-  const { upsell, bookmarkAtCap, toast, caps } = useApp();
+  const { upsell, bookmarkAtCap, toast, caps, submitPost } = useApp();
   const [, startTransition] = useTransition();
 
   function bookmark() {
@@ -106,10 +106,10 @@ export function PostCard({ post }: { post: PostCardVM }) {
       )}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-        <Action onClick={upsell} label={post.comments}><CommentIcon size={19} /></Action>
+        <Action onClick={() => submitPost("Comment added")} label={post.comments}><CommentIcon size={19} /></Action>
         <Action onClick={upsell} label={post.likes}><HeartIcon size={19} /></Action>
-        <Action onClick={upsell} label={post.reposts}><RepostIcon size={19} /></Action>
-        <Action onClick={upsell}><QuoteIcon size={19} /></Action>
+        <Action onClick={() => submitPost("Reposted")} label={post.reposts}><RepostIcon size={19} /></Action>
+        <Action onClick={() => submitPost("Quoted")}><QuoteIcon size={19} /></Action>
         <Action onClick={upsell}><ShareIcon size={19} /></Action>
         <button onClick={bookmark} style={{ ...actionBtn, color: post.bookmarked ? "var(--ll-secondary)" : "var(--ll-on-surface-variant)" }} aria-label="Bookmark">
           <BookmarkIcon size={19} filled={post.bookmarked} />
