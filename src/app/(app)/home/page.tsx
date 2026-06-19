@@ -19,7 +19,7 @@ export default function HomePage() {
       <div style={{ background: "var(--ll-wash-lavender)" }}>
         <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 6px", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--ll-gradient-deep)" }} />
+            <img src={`/nav-icons/logo.${process.env.NEXT_PUBLIC_NAV_ICON_EXT || "png"}`} alt="Shikho" width={34} height={34} style={{ width: 34, height: 34, borderRadius: 10, objectFit: "contain", flex: "none" }} />
             <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 800, fontSize: 18, color: "var(--ll-primary)" }}>Shikho</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

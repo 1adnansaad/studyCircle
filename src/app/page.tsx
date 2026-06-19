@@ -16,7 +16,7 @@ export default function LoginPage() {
     <main style={{ ...shell, ...(aspect ? { background: "#0c0e12", alignItems: "center" } : null) }}>
       <div style={{ ...frame, ...frameSize(aspect), overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 4 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 11, background: "var(--ll-gradient-deep)" }} />
+          <img src={`/nav-icons/logo.${process.env.NEXT_PUBLIC_NAV_ICON_EXT || "png"}`} alt="Shikho" width={38} height={38} style={{ width: 38, height: 38, borderRadius: 11, objectFit: "contain", flex: "none" }} />
           <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 800, fontSize: 20, color: "var(--ll-primary)" }}>Shikho</span>
         </div>
 
