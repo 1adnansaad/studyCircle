@@ -12,7 +12,7 @@ import { DeadButton } from "./screen-widgets";
 
 const MAX = 120;
 
-export function ExploreClient({ trending, used, cap, premium }: { trending: PostCardVM[]; used: number; cap: number; premium?: boolean }) {
+export function ExploreClient({ trending, used, cap, premium, aiDebug }: { trending: PostCardVM[]; used: number; cap: number; premium?: boolean; aiDebug?: boolean }) {
   const { upsell, chipInfo, toast } = useApp();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -22,6 +22,9 @@ export function ExploreClient({ trending, used, cap, premium }: { trending: Post
   const [queryLabel, setQueryLabel] = useState("");
   const [pending, start] = useTransition();
 
+  // AI_DEBUG popup: the step log returned by the last AI call.
+  const [debugLog, setDebugLog] = useState<{ title: string; lines: string[] } | null>(null);
+
   // Trending topic summaries (the AI card).
   const [topics, setTopics] = useState<TopicVM[] | null>(null);
   const [topicsFallback, setTopicsFallback] = useState(false);
@@ -30,6 +33,7 @@ export function ExploreClient({ trending, used, cap, premium }: { trending: Post
   function summarize() {
     startTopics(async () => {
       const res = await summarizeTrendingAction();
+      if (res.debug) setDebugLog({ title: "Trending topics · AI log", lines: res.debug });
       setTopics(res.topics);
       setTopicsFallback(res.fallback);
       if (!res.topics.length) toast("No trending topics to summarize right now.");
@@ -46,6 +50,7 @@ export function ExploreClient({ trending, used, cap, premium }: { trending: Post
     if (!q) return;
     start(async () => {
       const res = await searchAction(q);
+      if (res.debug) setDebugLog({ title: "AI search · log", lines: res.debug });
       if (res.status === "search_cap") {
         upsell({ title: `You've used all ${res.cap} of your weekly searches`, body: "Subscribe for unlimited AI search across StudyCircle." });
         return;
@@ -178,6 +183,29 @@ export function ExploreClient({ trending, used, cap, premium }: { trending: Post
           {trending.map((p) => <PostCard key={p.id} post={p} />)}
         </>
       )}
+
+      {/* AI_DEBUG popup — step log of the last AI call (gated by the AI_DEBUG env). */}
+      {debugLog && (
+        <div onClick={() => setDebugLog(null)} style={dbgOverlay}>
+          <div onClick={(e) => e.stopPropagation()} style={dbgCard}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontFamily: "var(--ll-font-display)", fontWeight: 700, fontSize: 15, color: "var(--ll-on-surface)" }}>{debugLog.title}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ll-secondary)", background: "var(--ll-secondary-tint)", padding: "2px 8px", borderRadius: 999 }}>AI_DEBUG</span>
+            </div>
+            <pre style={dbgPre}>{debugLog.lines.length ? debugLog.lines.join("\n") : "(no log lines)"}</pre>
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button
+                onClick={() => { navigator.clipboard?.writeText(debugLog.lines.join("\n")); toast("AI log copied."); }}
+                style={{ flex: 1, border: "1px solid var(--ll-outline-variant)", background: "var(--ll-surface-container-low)", color: "var(--ll-on-surface)", borderRadius: 10, padding: "10px 12px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+              >Copy</button>
+              <button
+                onClick={() => setDebugLog(null)}
+                style={{ flex: 1, border: "none", background: "var(--ll-secondary)", color: "#fff", borderRadius: 10, padding: "10px 12px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
+              >Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -188,3 +216,6 @@ const iconRound: React.CSSProperties = { border: "none", background: "var(--ll-s
 const meterChip: React.CSSProperties = { border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, padding: "5px 10px", borderRadius: 999, background: "var(--ll-secondary-tint)", color: "var(--ll-secondary)" };
 const ctaBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", border: "none", cursor: "pointer", background: "#fff", color: "var(--ll-primary)", fontWeight: 700, fontSize: 15, padding: 13, borderRadius: 999 };
 const topicRow: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", border: "none", cursor: "pointer", background: "rgba(255,255,255,.12)", color: "#fff", borderRadius: 12, padding: "10px 12px" };
+const dbgOverlay: React.CSSProperties = { position: "fixed", inset: 0, zIndex: 60, background: "rgba(25,28,30,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 };
+const dbgCard: React.CSSProperties = { width: "100%", maxWidth: 560, maxHeight: "70vh", display: "flex", flexDirection: "column", background: "var(--ll-surface-container-lowest)", borderRadius: "var(--ll-radius-lg)", boxShadow: "0 -10px 40px rgba(0,0,0,.3)", padding: 16 };
+const dbgPre: React.CSSProperties = { flex: 1, overflow: "auto", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12, lineHeight: 1.5, color: "var(--ll-on-surface)", background: "var(--ll-surface-container-low)", borderRadius: 10, padding: "10px 12px" };

@@ -167,6 +167,7 @@ on-screen meters, and the copy together** — change one and the UI text follows
 | `ANTHROPIC_MODEL` | `claude-haiku-4-5` | model id | Override the Anthropic model used for ranking. |
 | `LLM_CANDIDATE_ROWS` | `20` | integer ≥ 1 | How many rows of the `search_corpus` table are sent to the model per search. |
 | `LLM_SESSION_TOKEN_BUDGET` | `20000` | integer ≥ 0 | Per-demo-session LLM token cap. Exceeding it blocks search with an "AI tokens exhausted" toast. Resets on logout. |
+| `AI_DEBUG` | `false` | `1`/`true`/`on` | When on, AI search and "Trending now" show a **popup with the step-by-step log** of the AI call (provider, key present?, HTTP status, error body, parse result, fallback reason) so you can see why an AI call failed. Never logs the API key. |
 | `BOOKMARK_CAP` | `5` | integer ≥ 1 | Max bookmarks on the free trial. |
 | `JOIN_GROUP_CAP` | `2` | integer ≥ 1 | Max joined groups (no leaving once joined). |
 | `SEARCH_WEEKLY_CAP` | `7` | integer ≥ 1 | Max Explore searches per week. |
@@ -308,6 +309,10 @@ which render as post cards.
   corpus into ≤5 topics (tapping one opens its posts). Free users see the locked
   promo instead. With no key / on failure it falls back to subject-grouped demo
   topics. This card is independent of the weekly-search counter.
+- **Debugging AI calls:** set `AI_DEBUG=1` — every AI search and trending-summary
+  then opens a popup with the full step log (provider, `key present/missing`, HTTP
+  status, error body, parse result, why it fell back). The API key is never logged.
+  This is the fastest way to see *why* a search returned "keyword fallback".
 
 ```bash
 # example: use Anthropic

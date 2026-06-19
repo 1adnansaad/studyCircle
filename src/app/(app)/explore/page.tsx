@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentSession } from "@/lib/session";
+import { config } from "@/lib/config";
 import { exploreView } from "@/lib/view";
 import { Screen, PinnedHeader, ScrollBody } from "@/components/layout-bits";
 import { ExploreClient } from "@/components/explore-client";
@@ -26,7 +27,7 @@ export default function ExplorePage() {
       </PinnedHeader>
 
       <ScrollBody style={{ padding: "14px 14px 96px", display: "flex", flexDirection: "column", gap: 16 }}>
-        <ExploreClient trending={trending} used={used} cap={cap} premium={premium} />
+        <ExploreClient trending={trending} used={used} cap={cap} premium={premium} aiDebug={config.aiDebug} />
       </ScrollBody>
     </Screen>
   );

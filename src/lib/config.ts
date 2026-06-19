@@ -16,9 +16,20 @@ function intEnv(name: string, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function boolEnv(name: string, fallback = false): boolean {
+  const v = process.env[name]?.trim().toLowerCase();
+  if (v == null || v === "") return fallback;
+  return v === "1" || v === "true" || v === "on" || v === "yes";
+}
+
 export const config = {
   // App-frame aspect ratio: "device" (default, full-bleed) or "W:H" (e.g. "9:16").
   aspectRatio: parseAspect(process.env.ASPECT_RATIO),
+
+  // When on, AI search / trending return a step-by-step debug log that the
+  // Explore UI shows in a popup (so you can see why an AI call failed). Off by
+  // default. Never includes secrets — only "key present/missing", model, status.
+  aiDebug: boolEnv("AI_DEBUG", false),
 
   // Database
   dbPath: process.env.DB_PATH?.trim() || "./data/app.db",

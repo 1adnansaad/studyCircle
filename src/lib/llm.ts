@@ -19,9 +19,18 @@ export type RankResult = {
   provider: "gemini" | "anthropic" | "local";
   model: string;
   fallback: boolean;
+  logs: string[];
 };
 
 const MAX_RESULTS = 8;
+
+/** Tiny step logger — each line is prefixed with elapsed ms. NEVER log secrets. */
+type Log = (msg: string) => void;
+function makeLog(): { lines: string[]; add: Log } {
+  const t0 = Date.now();
+  const lines: string[] = [];
+  return { lines, add: (m) => lines.push(`+${String(Date.now() - t0).padStart(4)}ms  ${m}`) };
+}
 
 function buildPrompt(query: string, candidates: CorpusRow[]): string {
   const list = candidates
@@ -79,8 +88,10 @@ function keywordRank(query: string, candidates: CorpusRow[]): string[] {
     .map((r) => r.id);
 }
 
-async function callGemini(prompt: string): Promise<{ text: string; tokens: number }> {
+async function callGemini(prompt: string, log: Log = () => {}): Promise<{ text: string; tokens: number }> {
+  // Redacted in the log — the real URL carries ?key=… which must never surface.
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiModel}:generateContent?key=${config.geminiApiKey}`;
+  log(`POST gemini · model=${config.geminiModel} · prompt ${prompt.length} chars`);
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -89,15 +100,22 @@ async function callGemini(prompt: string): Promise<{ text: string; tokens: numbe
       generationConfig: { temperature: 0, maxOutputTokens: 512, responseMimeType: "application/json" },
     }),
   });
-  if (!res.ok) throw new Error(`gemini ${res.status}`);
+  log(`gemini HTTP ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    if (body) log(`gemini error body: ${body.replace(/\s+/g, " ").slice(0, 240)}`);
+    throw new Error(`gemini ${res.status}`);
+  }
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
   const u = data?.usageMetadata ?? {};
   const tokens = (u.promptTokenCount ?? 0) + (u.candidatesTokenCount ?? 0);
+  log(`gemini ok · ${text.length} chars · tokens=${tokens}`);
   return { text, tokens };
 }
 
-async function callAnthropic(prompt: string): Promise<{ text: string; tokens: number }> {
+async function callAnthropic(prompt: string, log: Log = () => {}): Promise<{ text: string; tokens: number }> {
+  log(`POST anthropic · model=${config.anthropicModel} · prompt ${prompt.length} chars`);
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -111,11 +129,17 @@ async function callAnthropic(prompt: string): Promise<{ text: string; tokens: nu
       messages: [{ role: "user", content: prompt }],
     }),
   });
-  if (!res.ok) throw new Error(`anthropic ${res.status}`);
+  log(`anthropic HTTP ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    if (body) log(`anthropic error body: ${body.replace(/\s+/g, " ").slice(0, 240)}`);
+    throw new Error(`anthropic ${res.status}`);
+  }
   const data = await res.json();
   const text = (data?.content ?? []).filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("");
   const u = data?.usageMetadata ?? data?.usage ?? {};
   const tokens = (u.input_tokens ?? 0) + (u.output_tokens ?? 0);
+  log(`anthropic ok · ${text.length} chars · tokens=${tokens}`);
   return { text, tokens };
 }
 
@@ -129,6 +153,7 @@ export type TopicsResult = {
   model: string;
   fallback: boolean; // true = demo stand-in topics (no key / call failed)
   tokensUsed: number;
+  logs: string[];
 };
 
 const MAX_TOPICS = 5;
@@ -201,15 +226,18 @@ function fallbackTopics(candidates: CorpusRow[]): Topic[] {
 }
 
 export async function summarizeTopics(candidates: CorpusRow[]): Promise<TopicsResult> {
+  const log = makeLog();
   const valid = new Set(candidates.map((c) => c.post_id));
   const provider = config.llmProvider;
   const key = provider === "anthropic" ? config.anthropicApiKey : config.geminiApiKey;
+  log.add(`summarizeTopics · provider=${provider} · key=${key ? "present" : "MISSING"} · candidates=${candidates.length}`);
 
   if (key && candidates.length) {
     const prompt = buildTopicsPrompt(candidates);
     try {
-      const { text, tokens } = provider === "anthropic" ? await callAnthropic(prompt) : await callGemini(prompt);
+      const { text, tokens } = provider === "anthropic" ? await callAnthropic(prompt, log.add) : await callGemini(prompt, log.add);
       const topics = parseTopics(text, valid);
+      log.add(`parsed ${topics.length} topic(s) from model output`);
       if (topics.length)
         return {
           topics,
@@ -217,43 +245,57 @@ export async function summarizeTopics(candidates: CorpusRow[]): Promise<TopicsRe
           model: provider === "anthropic" ? config.anthropicModel : config.geminiModel,
           fallback: false,
           tokensUsed: tokens || estimateTokens(prompt, text),
+          logs: log.lines,
         };
-    } catch {
-      // fall through to demo topics
+      log.add(`no usable topics parsed → demo topics`);
+    } catch (e) {
+      log.add(`LLM call failed: ${e instanceof Error ? e.message : String(e)} → demo topics`);
     }
+  } else {
+    log.add(`${key ? "no candidates" : "no API key"} → demo topics`);
   }
 
-  return { topics: fallbackTopics(candidates), provider: "local", model: "demo", fallback: true, tokensUsed: 0 };
+  const topics = fallbackTopics(candidates);
+  log.add(`demo topics by subject → ${topics.length} topic(s)`);
+  return { topics, provider: "local", model: "demo", fallback: true, tokensUsed: 0, logs: log.lines };
 }
 
 export async function rankSearch(query: string, candidates: CorpusRow[]): Promise<RankResult> {
+  const log = makeLog();
   const valid = new Set(candidates.map((c) => c.post_id));
   const prompt = buildPrompt(query, candidates);
   const provider = config.llmProvider;
   const key = provider === "anthropic" ? config.anthropicApiKey : config.geminiApiKey;
+  log.add(`rankSearch · provider=${provider} · key=${key ? "present" : "MISSING"} · candidates=${candidates.length}`);
 
   if (key) {
     try {
-      const { text, tokens } = provider === "anthropic" ? await callAnthropic(prompt) : await callGemini(prompt);
+      const { text, tokens } = provider === "anthropic" ? await callAnthropic(prompt, log.add) : await callGemini(prompt, log.add);
       const ids = parseIds(text, valid);
+      log.add(`parsed ${ids.length} valid id(s)${ids.length ? "" : " → keyword fallback"}`);
       return {
         postIds: ids.length ? ids : keywordRank(query, candidates),
         tokensUsed: tokens || estimateTokens(prompt, text),
         provider,
         model: provider === "anthropic" ? config.anthropicModel : config.geminiModel,
         fallback: ids.length === 0,
+        logs: log.lines,
       };
-    } catch {
-      // fall through to local ranking
+    } catch (e) {
+      log.add(`LLM call failed: ${e instanceof Error ? e.message : String(e)} → keyword fallback`);
     }
+  } else {
+    log.add(`no API key → keyword fallback`);
   }
 
   const ids = keywordRank(query, candidates);
+  log.add(`keyword ranking → ${ids.length} id(s)`);
   return {
     postIds: ids,
     tokensUsed: estimateTokens(prompt) + estimateTokens(ids.join(",")),
     provider: "local",
     model: "keyword",
     fallback: true,
+    logs: log.lines,
   };
 }

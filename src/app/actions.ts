@@ -137,67 +137,87 @@ export async function repostAction(postId: string): Promise<{ status: "ok"; post
 // ── Trending topic summaries (Explore card, spec §9) ─────────────────────────
 
 export type TopicVM = { title: string; summary: string; posts: PostCardVM[] };
-export type TopicsResponse = { status: "ok"; topics: TopicVM[]; fallback: boolean; provider: string };
+export type TopicsResponse = { status: "ok"; topics: TopicVM[]; fallback: boolean; provider: string; debug?: string[] };
 
 /**
  * Summarize the trending posts into up to 5 topics via the LLM (server-side).
  * Each topic resolves to the real posts it grouped, so the UI can open them.
  * No key / call failure → deterministic demo topics (`fallback: true`).
+ * With AI_DEBUG on, `debug` carries the step log for the Explore popup.
  */
 export async function summarizeTrendingAction(): Promise<TopicsResponse> {
   const sid = requireSession();
+  const dbg: string[] = [];
   const candidates = listSearchCorpus(config.llmCandidateRows);
+  dbg.push(`summarizeTrendingAction · candidates=${candidates.length} (limit ${config.llmCandidateRows})`);
   const res = await summarizeTopics(candidates);
+  dbg.push(...res.logs);
   const topics: TopicVM[] = res.topics
     .map((t) => ({ title: t.title, summary: t.summary, posts: searchResultsView(sid, t.postIds) }))
     .filter((t) => t.posts.length > 0);
-  return { status: "ok", topics, fallback: res.fallback, provider: res.provider };
+  dbg.push(`resolved ${topics.length} topic(s) with posts · provider=${res.provider} · fallback=${res.fallback}`);
+  return { status: "ok", topics, fallback: res.fallback, provider: res.provider, debug: config.aiDebug ? dbg : undefined };
 }
 
+type SearchOk = {
+  status: "ok";
+  results: PostCardVM[];
+  used: number;
+  cap: number;
+  provider: string;
+  model: string;
+  fallback: boolean;
+  tokensUsed: number;
+  tokenBudget: number;
+};
 export type SearchResponse =
-  | { status: "search_cap"; used: number; cap: number }
-  | { status: "token_exhausted"; budget: number }
-  | { status: "empty" }
-  | {
-      status: "ok";
-      results: PostCardVM[];
-      used: number;
-      cap: number;
-      provider: string;
-      model: string;
-      fallback: boolean;
-      tokensUsed: number;
-      tokenBudget: number;
-    };
+  | ({ status: "search_cap"; used: number; cap: number } & { debug?: string[] })
+  | ({ status: "token_exhausted"; budget: number } & { debug?: string[] })
+  | ({ status: "empty" } & { debug?: string[] })
+  | (SearchOk & { debug?: string[] });
 
 /**
  * Explore search (spec §9): weekly-cap gate → token-budget gate → LLM ranks
  * LLM_CANDIDATE_ROWS candidates from search_corpus → record tokens + the search.
- * LLM runs server-side only.
+ * LLM runs server-side only. With AI_DEBUG on, `debug` carries the step log.
  */
 export async function searchAction(query: string): Promise<SearchResponse> {
   const sid = requireSession();
+  const dbg: string[] = [];
+  const debug = () => (config.aiDebug ? dbg : undefined);
   const q = query.trim();
-  if (!q) return { status: "empty" };
+  if (!q) {
+    dbg.push("searchAction · empty query");
+    return { status: "empty", debug: debug() };
+  }
 
   const premium = isPremium(sid);
   const used = searchesUsed(sid);
-  if (!premium && used >= publicCaps.searchWeeklyCap)
-    return { status: "search_cap", used, cap: publicCaps.searchWeeklyCap };
+  dbg.push(`searchAction · q="${q.slice(0, 80)}" · premium=${premium} · searchesUsed=${used}/${publicCaps.searchWeeklyCap}`);
+  if (!premium && used >= publicCaps.searchWeeklyCap) {
+    dbg.push("blocked: weekly search cap reached");
+    return { status: "search_cap", used, cap: publicCaps.searchWeeklyCap, debug: debug() };
+  }
 
-  if (!premium && !hasTokenBudget(sid))
-    return { status: "token_exhausted", budget: config.llmSessionTokenBudget };
+  if (!premium && !hasTokenBudget(sid)) {
+    dbg.push(`blocked: token budget exhausted (${llmTokensUsed(sid)}/${config.llmSessionTokenBudget})`);
+    return { status: "token_exhausted", budget: config.llmSessionTokenBudget, debug: debug() };
+  }
 
   const candidates = listSearchCorpus(config.llmCandidateRows);
+  dbg.push(`candidates from search_corpus: ${candidates.length} (limit ${config.llmCandidateRows})`);
   const ranked = await rankSearch(q, candidates);
+  dbg.push(...ranked.logs);
 
   addLlmTokens(sid, ranked.tokensUsed);
   recordSearch(sid); // count the weekly search only once it actually ran
 
   const results = searchResultsView(sid, ranked.postIds);
+  dbg.push(`result: ${results.length} post(s) · provider=${ranked.provider} · model=${ranked.model} · fallback=${ranked.fallback} · tokens+${ranked.tokensUsed} (total ${llmTokensUsed(sid)})`);
   refresh();
   return {
     status: "ok",
+    debug: debug(),
     results,
     used: used + 1,
     cap: publicCaps.searchWeeklyCap,
