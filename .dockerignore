@@ -1,0 +1,31 @@
+# What NOT to send into the Docker build context (keeps the image small & safe).
+# Like .gitignore, but it controls what `docker build` can see.
+
+# Dependencies — always recompiled inside the image (better-sqlite3 is native:
+# a Mac-built binary would not run on the Linux runtime).
+node_modules
+
+# Next.js build artifacts — rebuilt by the build stage.
+.next
+out
+
+# Secrets & local runtime state — MUST NOT be baked into a shipped image.
+.env
+.env.local
+data/app.db
+data/app.db-wal
+data/app.db-shm
+# NOTE: data/enhanced-seed.db is intentionally NOT ignored — that committed seed
+# template is copied into the image so first-run seeding works (see Dockerfile).
+
+# Git, docs, and design reference — not needed at runtime.
+.git
+.gitignore
+design-ref
+*.md
+tsconfig.tsbuildinfo
+
+# OS / editor cruft
+.DS_Store
+**/.DS_Store
+*.log

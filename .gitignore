@@ -8,6 +8,8 @@ out
 # env (never commit secrets / local config)
 .env
 .env.local
+# Docker runtime env (may hold an API key — commit only .env.docker.example)
+.env.docker
 
 # live database (commit the seed *source*, not the live db)
 /data/app.db

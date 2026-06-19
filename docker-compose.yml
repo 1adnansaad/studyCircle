@@ -1,0 +1,26 @@
+# Convenience wrapper around the same build/run flags you'd type by hand.
+#   docker compose up --build     → build (if needed) + run
+#   docker compose down           → stop & remove the container (volume kept)
+#   docker compose down -v        → also delete the data volume (fresh seed next run)
+
+services:
+  studycircle:
+    build:
+      context: .
+      # Build-time vars go here. NEXT_PUBLIC_* is inlined at build → changing it
+      # requires `docker compose build` again (a restart is not enough).
+      args:
+        NEXT_PUBLIC_NAV_ICON_EXT: png
+    ports:
+      - "3000:3000" # host:container — open http://localhost:3000
+    # Runtime config. Edit .env.docker and restart to change behavior (no rebuild).
+    env_file:
+      - .env.docker
+    volumes:
+      # Named volume → the live SQLite DB persists across restarts. The seed
+      # template lives at /app/seed (outside this mount), so it's never shadowed.
+      - studycircle-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  studycircle-data:

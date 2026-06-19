@@ -91,60 +91,21 @@ npm run start        # serve the build → http://localhost:3000
 PORT=8080 npm run start
 ```
 
-### 3. Docker (ready, not bundled)
+### 3. Docker — on the `docker` branch
 
-The app is **Docker-ready** by design — all persistent state lives under `./data`,
-all config is env-only, and Node is pinned — but no Dockerfile ships in the repo
-yet. To containerize, drop in these two files and run `docker compose up`:
+**To run StudyCircle in Docker, check out the [`docker`](../../tree/docker) branch.**
+The Dockerfile, `docker-compose.yml`, and Docker-specific instructions (including how
+to pass environment variables to the container) all live there — `master` stays
+Docker-free.
 
-<details>
-<summary><code>Dockerfile</code> (starting point)</summary>
-
-```dockerfile
-FROM node:22-bookworm-slim AS deps
-WORKDIR /app
-# build tools for better-sqlite3's native module
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
-COPY package*.json ./
-RUN npm ci
-
-FROM node:22-bookworm-slim AS build
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
-
-FROM node:22-bookworm-slim AS run
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/src/data ./src/data
-EXPOSE 3000
-CMD ["npm", "run", "start"]
+```bash
+git fetch origin
+git checkout docker      # or: git clone -b docker <repo-url>
 ```
-</details>
 
-<details>
-<summary><code>docker-compose.yml</code> (starting point)</summary>
-
-```yaml
-services:
-  studycircle:
-    build: .
-    ports:
-      - "3000:3000"
-    env_file: .env
-    environment:
-      - DB_PATH=/app/data/app.db
-    volumes:
-      - ./data:/app/data        # persist the SQLite DB across restarts
-```
-</details>
-
-Mount `./data` so the database survives container restarts, and pass config via
-`env_file`/`environment`.
+Then follow the **Run with Docker** section in that branch's README. The app is
+Docker-ready by design — all persistent state lives under `./data` (mount it as a
+volume to persist the SQLite DB across restarts) and all config is env-only.
 
 ---
 
