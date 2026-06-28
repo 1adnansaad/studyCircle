@@ -465,6 +465,35 @@ export function createRepost(sessionId: string, originalPostId: string, quoteBod
   })();
 }
 
+/** Undo the session's repost of an original post: delete the referencing feed
+ *  post, decrement the original's repost_count, and refund one unit of the weekly
+ *  budget. (The repost toggle is the one exception to the monotonic rule.) */
+export function undoRepost(sessionId: string, originalPostId: string): { ok: true; used: number } {
+  const db = getDb();
+  return db.transaction((): { ok: true; used: number } => {
+    const repost = db
+      .prepare("SELECT id FROM posts WHERE session_id = ? AND repost_of_post_id = ? LIMIT 1")
+      .get(sessionId, originalPostId) as { id: string } | undefined;
+    if (repost) {
+      db.prepare("DELETE FROM posts WHERE id = ?").run(repost.id);
+      db.prepare("UPDATE posts SET repost_count = MAX(0, repost_count - 1) WHERE id = ?").run(originalPostId);
+      db.prepare(
+        "UPDATE post_usage SET posts_used = MAX(0, posts_used - 1) WHERE session_id = ? AND week_start = ?"
+      ).run(sessionId, currentWeekStart());
+    }
+    return { ok: true, used: postsUsed(sessionId) };
+  })();
+}
+
+/** Original-post ids the session has reposted (so the toggle survives a reload). */
+export function listSessionRepostedOriginals(sessionId: string): string[] {
+  return (
+    getDb()
+      .prepare("SELECT repost_of_post_id AS id FROM posts WHERE session_id = ? AND repost_of_post_id IS NOT NULL")
+      .all(sessionId) as { id: string }[]
+  ).map((r) => r.id);
+}
+
 /** Create a comment/reply by the demo session; bumps the post's comment_count. */
 export function createComment(
   sessionId: string,

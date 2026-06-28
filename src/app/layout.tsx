@@ -4,8 +4,24 @@ import { fontFaces } from "@/lib/fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "StudyCircle · Shikho",
+  title: "StudyCircle by Shikho",
   description: "StudyCircle — a social feature demo inside the Shikho app.",
+  openGraph: {
+  title: "StudyCircle by Shikho",          // og:title — overrides metadata.title if set
+  description: "StudyCircle — a social feature demo inside the Shikho app.",   // og:description — overrides metadata.description if set
+  url: "https://...",   // og:url — canonical page URL
+  type: "website",      // og:type — "website" | "article" | "profile" etc.
+  siteName: "StudyCircle",   // og:site_name
+  images: [             // og:image (array, but most platforms use first)
+    {
+      url: "https://raw.githubusercontent.com/1adnansaad/storage/main/og.banner.png",   // og:image — must be absolute
+      width: 600,          // og:image:width
+      height: 315,          // og:image:height
+      alt: "Parsing from GitHub. Might produce error...",           // og:image:alt
+    },
+  ],
+  locale: "bn_BD",      // og:locale — optional, e.g. "en_US" or "bn_BD"
+},
 };
 
 export const viewport: Viewport = {

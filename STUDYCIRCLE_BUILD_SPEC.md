@@ -9,14 +9,14 @@ A working demo of **StudyCircle**, a social feature inside the existing **Shikho
 ## 0. Build context & stack
 
 - **Web app**, mobile-first, runs in a phone browser. No native app / APK.
-- **Next.js (App Router) + SQLite.** Runs locally with `npm run dev` first. Structured so `docker compose up` works later with no rewrite.
+- **Next.js (App Router) + SQLite.** Runs locally with `npm run dev`. Now also ships a multi-stage `Dockerfile` + `docker-compose.yml` — `docker build` / `docker compose up` work with no rewrite (see the README's "Run with Docker").
 - **Persistent state is real** (SQLite). Every object in §2 must actually save and survive a server restart and a browser close.
 - **Config via env only**, never hardcoded paths:
   - `GEMINI_API_KEY` **and** `ANTHROPIC_API_KEY` — support both; choose provider via `LLM_PROVIDER` (default `gemini`). LLM calls run **server-side only** (an API route), never from the browser.
   - `DB_PATH` (default `./data/app.db`), `PORT`.
   - **Free-trial caps are env-configurable, never hardcoded:** `BOOKMARK_CAP` (default `5`), `JOIN_GROUP_CAP` (default `2`), `SEARCH_WEEKLY_CAP` (default `7`). Read these everywhere the limit is enforced, displayed in meters, or shown in copy — so changing the `.env` changes the limit and the UI text together.
   - Commit a `.env.example` listing all of these.
-- **Persistence layout for clean Docker-later:** SQLite file lives at `./data/app.db`; any referenced images live in `/public/images/`. `.gitignore`: `node_modules`, `.env`, `.next`, `./data/app.db` (commit the *seed source*, not the live db).
+- **Persistence layout (Docker now implemented):** SQLite file lives at `./data/app.db`; any referenced images live in `/public/images/`. In Docker the live DB is a named volume (`studycircle-data` → `/app/data`) while the seed template sits at `/app/seed` *outside* the volume so a mount can't shadow it (see README). `.gitignore`: `node_modules`, `.env`, `.env.docker`, `.next`, `./data/app.db` (commit the *seed source*, not the live db).
 - **Single demo identity.** One active demo user/session at a time; multi-user is out of scope.
 - **Visuals = DESIGN.md.** Pink-lead / indigo-deep, Baloo Da 2 + Be Vietnam Pro, pill buttons, 16px cards, Bengali numerals and ৳. X/Twitter is an **interaction-pattern reference only** — zero Twitter visuals (no blue, no bird, no Twitter typeface).
 - **Language split:** existing Shikho chrome stays **Bengali** (nav labels পদ্ধতি / ইনবক্স / শিখো AI, embed CTA, numerals, ৳). New StudyCircle strings are **English** (Feed, Groups, Bookmark, Search, Follow, gate/empty/modal copy).

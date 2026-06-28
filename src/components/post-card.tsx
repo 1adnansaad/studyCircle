@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { PostCardVM, CommentVM } from "@/lib/view";
+import { bnCount } from "@/lib/format";
 import { useApp } from "./app-shell";
-import { toggleBookmarkAction, repostAction } from "@/app/actions";
+import { toggleBookmarkAction, repostAction, unrepostAction } from "@/app/actions";
 import {
   CommentIcon, HeartIcon, RepostIcon, ShareIcon, BookmarkIcon, PlayIcon,
 } from "./icons";
@@ -64,13 +65,13 @@ export function PostCard({ post }: { post: PostCardVM }) {
   const { upsell, bookmarkAtCap, toast, caps, postCapUpsell, session } = useApp();
   const [, startTransition] = useTransition();
   const [liked, setLiked] = useState(false);
-  const [reposted, setReposted] = useState(false);
+  const [reposted, setReposted] = useState(post.reposted);
 
   function bookmark() {
     startTransition(async () => {
       const res = await toggleBookmarkAction(post.id);
       if (!res.ok && res.reason === "at_cap") bookmarkAtCap();
-      else if (res.ok && res.bookmarked) toast(`Bookmarked. ${res.count} of ${caps.bookmarkCap} free-trial bookmarks used.`);
+      else if (res.ok && res.bookmarked) toast(session.premium ? "Bookmarked." : `Bookmarked. ${res.count} of ${caps.bookmarkCap} free-trial bookmarks used.`);
       else if (res.ok && !res.bookmarked) toast("Removed from bookmarks.");
       router.refresh();
     });
@@ -83,12 +84,20 @@ export function PostCard({ post }: { post: PostCardVM }) {
     toast(liked ? "Removed like." : "Liked.");
   }
 
+  // Repost is a real toggle: click reposts to your feed, click again undoes it
+  // (deletes the referencing post + refunds one unit of the weekly budget).
   function repost() {
     startTransition(async () => {
-      const res = await repostAction(post.id);
-      if (res.status === "at_cap") { postCapUpsell(); return; }
-      setReposted(true);
-      toast("Reposted to your feed.");
+      if (reposted) {
+        await unrepostAction(post.id);
+        setReposted(false);
+        toast("Removed repost.");
+      } else {
+        const res = await repostAction(post.id);
+        if (res.status === "at_cap") { postCapUpsell(); return; }
+        setReposted(true);
+        toast("Reposted to your feed.");
+      }
       router.refresh();
     });
   }
@@ -139,8 +148,8 @@ export function PostCard({ post }: { post: PostCardVM }) {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
         <Action onClick={() => router.push(`/post/${post.id}`)} label={post.comments}><CommentIcon size={19} /></Action>
-        <Action onClick={like} label={post.likes} color={liked ? "var(--ll-error)" : undefined}><HeartIcon size={19} fill={liked ? "currentColor" : "none"} /></Action>
-        <Action onClick={repost} label={post.reposts} color={reposted ? "var(--ll-success)" : undefined}><RepostIcon size={19} /></Action>
+        <Action onClick={like} label={bnCount(post.likeCount + (liked ? 1 : 0))} color={liked ? "var(--ll-error)" : undefined}><HeartIcon size={19} fill={liked ? "currentColor" : "none"} /></Action>
+        <Action onClick={repost} label={bnCount(post.repostCount + ((reposted ? 1 : 0) - (post.reposted ? 1 : 0)))} color={reposted ? "var(--ll-success)" : undefined}><RepostIcon size={19} /></Action>
         <Action onClick={() => toast("Shareable link copied to clipboard!")}><ShareIcon size={19} /></Action>
         <button onClick={bookmark} style={{ ...actionBtn, color: post.bookmarked ? "var(--ll-secondary)" : "var(--ll-on-surface-variant)" }} aria-label="Bookmark">
           <BookmarkIcon size={19} filled={post.bookmarked} />

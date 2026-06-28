@@ -19,26 +19,26 @@ export function bnCount(n: number): string {
 
 /** "ক্লাস ৯" */
 export function classTag(klass: number): string {
-  return `CLass ${(klass)}`;
+  return `Class ${(klass)}`;
 }
 
 /** Seeded leaderboard tag, e.g. "র‍্যাঙ্ক #৮". null → no tag. */
 export function rankTag(pos: number | null): string | null {
-  return pos == null ? null : `র‍্যাঙ্ক #${bn(pos)}`;
+  return pos == null ? null : `Ranked #${(pos)}`;
 }
 
 /** Relative time in Bengali from an ISO timestamp. */
 export function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
   const mins = Math.max(0, Math.floor((Date.now() - then) / 60000));
-  if (mins < 1) return "এইমাত্র";
-  if (mins < 60) return `${bn(mins)} মিনিট আগে`;
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${(mins)}m ago`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${bn(hours)} ঘণ্টা আগে`;
+  if (hours < 24) return `${(hours)}h ago`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${bn(days)} দিন আগে`;
+  if (days < 7) return `${(days)}d ago`;
   const weeks = Math.floor(days / 7);
-  return `${bn(weeks)} সপ্তাহ আগে`;
+  return `${(weeks)}w ago`;
 }
 
 /** Initials for the avatar disc (from the captured Name). */

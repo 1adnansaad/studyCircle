@@ -298,7 +298,7 @@ function Upsell({ courseLine, title, body, onClose, onCta }: { courseLine: strin
   return (
     <SheetBody>
       <SheetTitle>{title ?? "Subscribe to unlock more"}</SheetTitle>
-      <SheetText>{body ?? `Unlock likes, shares, and unlimited posting — along with your ${courseLine} courses.`}</SheetText>
+      <SheetText>{body ?? `Unlock likes and unlimited posting — along with your ${courseLine} courses.`}</SheetText>
       <PrimaryBtn onClick={onCta}>See {courseLine} courses</PrimaryBtn>
       <GhostBtn onClick={onClose}>Maybe later</GhostBtn>
     </SheetBody>
