@@ -22,6 +22,13 @@ function boolEnv(name: string, fallback = false): boolean {
   return v === "1" || v === "true" || v === "on" || v === "yes";
 }
 
+// Vercel's serverless filesystem is read-only except for /tmp (which is also
+// ephemeral — wiped on cold starts). Detected via the platform's VERCEL env var
+// so the DB defaults land somewhere writable without manual config. Fine for a
+// single-session demo: state resets on cold start, which is the documented
+// freemium-demo behavior anyway.
+const onVercel = !!process.env.VERCEL;
+
 export const config = {
   // App-frame aspect ratio: "device" (default, full-bleed) or "W:H" (e.g. "9:16").
   aspectRatio: parseAspect(process.env.ASPECT_RATIO),
@@ -37,12 +44,16 @@ export const config = {
   // default. Never includes secrets — only "key present/missing", model, status.
   aiDebug: boolEnv("AI_DEBUG", false),
 
-  // Database
-  dbPath: process.env.DB_PATH?.trim() || "./data/app.db",
+  // Database. On Vercel the live DB must live under /tmp (the only writable path);
+  // locally it stays in ./data so Docker can mount it.
+  dbPath: process.env.DB_PATH?.trim() || (onVercel ? "/tmp/app.db" : "./data/app.db"),
   // Optional SQLite file used as the DEFAULT-SEED TEMPLATE on first run. When set
   // and valid, the live DB is initialized by copying this template (then the
-  // mutable user layer is cleared). Empty → seed from src/data/seed.json.
-  seedDbPath: process.env.SEED_DB_PATH?.trim() || "",
+  // mutable user layer is cleared). Empty → seed from src/data/seed.json. On
+  // Vercel it defaults to the committed enhanced world (matching the local .env)
+  // so the deployed demo seeds from the same data without manual env config.
+  seedDbPath:
+    process.env.SEED_DB_PATH?.trim() || (onVercel ? "./data/enhanced-seed.db" : ""),
 
   // Free-trial caps (env-configurable; drive enforcement + meters + copy)
   bookmarkCap: intEnv("BOOKMARK_CAP", 5),

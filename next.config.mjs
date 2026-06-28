@@ -7,6 +7,13 @@ const nextConfig = {
 
   // better-sqlite3 is a native module — keep it server-only, never bundled.
   serverExternalPackages: ["better-sqlite3"],
+
+  // The seed template is read via fs at runtime (not statically imported), so
+  // Vercel's function tracer can't see it. Force-include it in every function
+  // bundle so the deployed serverless world can seed from ./data/enhanced-seed.db.
+  outputFileTracingIncludes: {
+    "/**/*": ["./data/enhanced-seed.db"],
+  },
 };
 
 export default nextConfig;
