@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
   title: "StudyCircle by Shikho",          // og:title — overrides metadata.title if set
   description: "StudyCircle — a social feature demo inside the Shikho app.",   // og:description — overrides metadata.description if set
-  url: "https://...",   // og:url — canonical page URL
+  url: "vercel.app",   // og:url — canonical page URL
   type: "website",      // og:type — "website" | "article" | "profile" etc.
   siteName: "StudyCircle",   // og:site_name
   images: [             // og:image (array, but most platforms use first)
