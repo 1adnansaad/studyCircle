@@ -236,6 +236,7 @@ export async function summarizeTopics(candidates: CorpusRow[]): Promise<TopicsRe
     const prompt = buildTopicsPrompt(candidates);
     try {
       const { text, tokens } = provider === "anthropic" ? await callAnthropic(prompt, log.add) : await callGemini(prompt, log.add);
+      log.add(`raw output: ${text.replace(/\s+/g, " ").slice(0, 300)}`);
       const topics = parseTopics(text, valid);
       log.add(`parsed ${topics.length} topic(s) from model output`);
       if (topics.length)

@@ -112,12 +112,7 @@ docker build -t studycircle .
 **Run it:**
 
 ```bash
-docker run --rm \
-  -p 3000:3000 \
-  --env-file .env.docker \
-  -v studycircle-data:/app/data \
-  --name studycircle \
-  studycircle
+docker run --rm -p 3000:3000 --env-file .env.docker -v studycircle-data:/app/data --name studycircle studycircle
 ```
 
 Open **http://localhost:3000**. Stop with `Ctrl-C` (or `docker stop studycircle`).
